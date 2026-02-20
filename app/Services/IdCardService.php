@@ -126,18 +126,19 @@ class IdCardService
             $fontPath = public_path('fonts/Lato-Bold.ttf');
 
             // 2. Add Photo (Overlay)
-            if ($teacher->photo && \Illuminate\Support\Facades\Storage::exists('public/photo/teachers/' . $teacher->photo)) {
-                $photoPath = \Illuminate\Support\Facades\Storage::path('public/photo/teachers/' . $teacher->photo);
+            // Fix: Use 'public' disk explicitly and correct path
+            if ($teacher->photo && Storage::disk('public')->exists('photo/teachers/' . $teacher->photo)) {
+                $photoPath = Storage::disk('public')->path('photo/teachers/' . $teacher->photo);
                 $photo = $this->manager->read($photoPath);
                 
                 // Resize photo to square and reasonable size (e.g. 300x300 or based on template design)
-                // Assuming a standard design, let's make it 300x300 cover
-                $photo->cover(300, 300);
+                // Assuming a standard design, let's make it 300x300 fit
+                $photo->resize(400, 400);
                 
                 // Place photo. Position needs to be determined. 
                 // Suggestion: Top-Center or specifically defined. 
                 // For now, let's place it at top-center with some padding.
-                $imageFront->place($photo, 'top-center', 0, 150);
+                $imageFront->place($photo, 'top-center', -2, 458);
             }
 
             // 3. Add Text (Front)

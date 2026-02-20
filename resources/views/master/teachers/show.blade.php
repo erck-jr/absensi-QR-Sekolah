@@ -41,11 +41,11 @@
                 <!-- ID Card Content -->
                 <div id="idcard-content" class="tab-content hidden">
                     @if($hasFront || $hasBack)
-                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             @if($hasFront)
                                 <div class="flex flex-col items-center">
                                     <p class="mb-2 font-semibold text-gray-700 ">Depan</p>
-                                    <img src="{{ $frontUrl }}" alt="ID Card Front" class="max-w-xs w-full shadow-lg rounded-lg mb-4">
+                                    <img src="{{ $frontUrl }}?t={{ time() }}" alt="ID Card Front" class="max-w-xs w-full shadow-lg rounded-lg mb-4">
                                     <a href="{{ $frontUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2   focus:outline-none ">
                                         Unduh Depan
                                     </a>
@@ -54,7 +54,7 @@
                             @if($hasBack)
                                 <div class="flex flex-col items-center">
                                     <p class="mb-2 font-semibold text-gray-700 ">Belakang</p>
-                                    <img src="{{ $backUrl }}" alt="ID Card Back" class="max-w-xs w-full shadow-lg rounded-lg mb-4">
+                                    <img src="{{ $backUrl }}?t={{ time() }}" alt="ID Card Back" class="max-w-xs w-full shadow-lg rounded-lg mb-4">
                                     <a href="{{ $backUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2   focus:outline-none ">
                                         Unduh Belakang
                                     </a>
