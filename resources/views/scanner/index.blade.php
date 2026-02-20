@@ -184,6 +184,16 @@
             const shiftId = shiftDropdown.value;
             const scanMode = modeHidden.value;
 
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Memproses Absensi...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            }
+
             fetch("{{ route('scanner.store') }}", {
                 method: "POST",
                 headers: {

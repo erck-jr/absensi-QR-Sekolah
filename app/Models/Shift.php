@@ -12,5 +12,6 @@ class Shift extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'late_check_in_minute' => 'integer',
     ];
 }
