@@ -11,6 +11,13 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    protected $reportService;
+
+    public function __construct(\App\Services\ReportService $reportService)
+    {
+        $this->reportService = $reportService;
+    }
+
     public function studentIndex(Request $request)
     {
         $classes = SchoolClass::all();
@@ -21,19 +28,23 @@ class ReportController extends Controller
         
         if ($mode === 'monthly') {
             $month = $request->get('month', Carbon::now()->month);
-            $year = $request->get('year', Carbon::now()->year); // Default to current year if not set
+            $year = $request->get('year', Carbon::now()->year); 
 
             $currentDate = Carbon::now();
             $selectedDate = Carbon::createFromDate($year, $month, 1);
             
-            // Logic: Show only previous months. If selected month is >= current month, show "No Data"
-            // "jika bulan yang dipilih adalah bulan berjalan atau setalahnya tampilkan belum ada data laporan."
             if ($selectedDate->startOfMonth()->gte($currentDate->startOfMonth())) {
-                 $students = collect([]); // Empty collection to trigger "No Data"
+                 $reportData = null; // No Data
                  $isFutureOrCurrent = true;
             } else {
                  $isFutureOrCurrent = false;
-                 // Matrix Query: Get All Students with Attendances for that month
+                 
+                 // Validate Class ID for Monthly Mode
+                 if (!$request->filled('class_id')) {
+                    return redirect()->route('reports.students', ['mode' => 'daily'])->with('error', 'Silakan pilih kelas untuk melihat laporan bulanan.');
+                 }
+
+                 // Fetch Students
                  $query = \App\Models\Student::with(['classRoom', 'attendances' => function($q) use ($month, $year) {
                      $q->whereMonth('dates', $month)->whereYear('dates', $year)->with('attendanceCode');
                  }]);
@@ -42,15 +53,20 @@ class ReportController extends Controller
                     $query->where('class_id', $request->class_id);
                  }
                  
-                 // Order by name
+                 // Get Data
                  $students = $query->orderBy('name')->get();
+                 
+                 // Generate Report Data via Service
+                 $reportData = $this->reportService->generateMonthlyData($students, $month, $year);
             }
 
-            return view('reports.students', compact('students', 'classes', 'attendanceCodes', 'shifts', 'mode', 'month', 'year', 'isFutureOrCurrent'));
+            return view('reports.students', compact('reportData', 'classes', 'attendanceCodes', 'shifts', 'mode', 'month', 'year', 'isFutureOrCurrent'));
         }
 
         // DAILY MODE
         $date = $request->get('start_date', Carbon::today()->toDateString());
+        $isSunday = Carbon::parse($date)->isSunday();
+        $holiday = Holiday::whereDate('dates', $date)->first();
         
         // Query Students (Show ALL)
         $query = \App\Models\Student::with(['classRoom', 'attendances' => function($q) use ($date) {
@@ -78,7 +94,7 @@ class ReportController extends Controller
 
         $students = $query->orderBy('name')->get();
 
-        return view('reports.students', compact('students', 'classes', 'attendanceCodes', 'shifts', 'date', 'mode'));
+        return view('reports.students', compact('students', 'classes', 'attendanceCodes', 'shifts', 'date', 'mode', 'isSunday', 'holiday'));
     }
 
     public function teacherIndex(Request $request)
@@ -95,7 +111,7 @@ class ReportController extends Controller
             $selectedDate = Carbon::createFromDate($year, $month, 1);
 
             if ($selectedDate->startOfMonth()->gte($currentDate->startOfMonth())) {
-                 $teachers = collect([]);
+                 $reportData = null;
                  $isFutureOrCurrent = true;
             } else {
                  $isFutureOrCurrent = false;
@@ -103,14 +119,20 @@ class ReportController extends Controller
                      $q->whereMonth('dates', $month)->whereYear('dates', $year)->with('attendanceCode');
                  }]);
                  
+                 // Get Data
                  $teachers = $query->orderBy('name')->get();
+
+                 // Generate Report Data via Service
+                 $reportData = $this->reportService->generateMonthlyData($teachers, $month, $year);
             }
 
-            return view('reports.teachers', compact('teachers', 'attendanceCodes', 'shifts', 'mode', 'month', 'year', 'isFutureOrCurrent'));
+            return view('reports.teachers', compact('reportData', 'attendanceCodes', 'shifts', 'mode', 'month', 'year', 'isFutureOrCurrent'));
         }
 
         // DAILY
         $date = $request->get('start_date', Carbon::today()->toDateString());
+        $isSunday = Carbon::parse($date)->isSunday();
+        $holiday = Holiday::whereDate('dates', $date)->first();
 
         $query = \App\Models\Teacher::with(['attendances' => function($q) use ($date) {
             $q->whereDate('dates', $date)->with('attendanceCode', 'shift');
@@ -134,7 +156,7 @@ class ReportController extends Controller
 
         $teachers = $query->orderBy('name')->get();
         
-        return view('reports.teachers', compact('teachers', 'attendanceCodes', 'shifts', 'date', 'mode'));
+        return view('reports.teachers', compact('teachers', 'attendanceCodes', 'shifts', 'date', 'mode', 'isSunday', 'holiday'));
     }
 
     public function updateStudentAttendance(Request $request)
@@ -206,8 +228,9 @@ class ReportController extends Controller
          }
          
          $students = $query->orderBy('name')->get();
+         $reportData = $this->reportService->generateMonthlyData($students, $month, $year);
 
-         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\StudentMonthlyExport($students, $month, $year), 'Laporan_Siswa_' . $month . '_' . $year . '.xlsx');
+         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\StudentMonthlyExport($reportData, $month, $year), 'Laporan_Siswa_' . $month . '_' . $year . '.xlsx');
     }
 
     public function exportTeacherMonthly(Request $request)
@@ -220,8 +243,9 @@ class ReportController extends Controller
          }]);
          
          $teachers = $query->orderBy('name')->get();
+         $reportData = $this->reportService->generateMonthlyData($teachers, $month, $year);
 
-         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\TeacherMonthlyExport($teachers, $month, $year), 'Laporan_Guru_' . $month . '_' . $year . '.xlsx');
+         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\TeacherMonthlyExport($reportData, $month, $year), 'Laporan_Guru_' . $month . '_' . $year . '.xlsx');
     }
 
     public function exportStudentDaily(Request $request)

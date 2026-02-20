@@ -10,13 +10,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class TeacherMonthlyExport implements FromView, ShouldAutoSize, WithStyles
 {
-    protected $teachers;
+    protected $reportData;
     protected $month;
     protected $year;
 
-    public function __construct($teachers, $month, $year)
+    public function __construct($reportData, $month, $year)
     {
-        $this->teachers = $teachers;
+        $this->reportData = $reportData;
         $this->month = $month;
         $this->year = $year;
     }
@@ -24,7 +24,7 @@ class TeacherMonthlyExport implements FromView, ShouldAutoSize, WithStyles
     public function view(): View
     {
         return view('reports.exports.teacher_monthly', [
-            'teachers' => $this->teachers,
+            'reportData' => $this->reportData,
             'month' => $this->month,
             'year' => $this->year
         ]);

@@ -56,7 +56,7 @@
                             </div>
                         </template>
                         
-                         <div>
+                         <div x-show="mode !== 'monthly'">
                             <label for="status" class="block mb-2 text-sm font-medium text-gray-900 ">Status</label>
                             <select id="status" name="status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5">
                                 <option value="">Semua Status</option>
@@ -137,18 +137,32 @@
                             </tr>
                             @else
                              <tr>
-                                <th scope="col" class="px-2 py-3 border sticky left-0 bg-gray-50">No</th>
-                                <th scope="col" class="px-4 py-3 border text-left sticky left-10 bg-gray-50">Nama Guru</th>
-                                @php
-                                    // $daysInMonth defined at top
-                                @endphp
-                                @for($i = 1; $i <= $daysInMonth; $i++)
-                                    <th scope="col" class="px-1 py-3 border w-8">{{ $i }}</th>
-                                @endfor
-                                <th scope="col" class="px-2 py-3 border bg-green-100 text-green-800">H</th>
-                                <th scope="col" class="px-2 py-3 border bg-yellow-100 text-yellow-800">I</th>
-                                <th scope="col" class="px-2 py-3 border bg-yellow-100 text-yellow-800">S</th>
-                                <th scope="col" class="px-2 py-3 border bg-red-100 text-red-800">A</th>
+                            <tr>
+                                <th colspan="{{ $daysInMonth + 6 }}" class="px-6 py-4 text-center text-lg font-bold border bg-gray-50 uppercase text-gray-900">
+                                    Laporan Kehadiran Guru
+                                </th>
+                            </tr>
+                            <tr>
+                                <th colspan="{{ $daysInMonth + 6 }}" class="px-6 py-2 text-center text-lg font-bold border bg-gray-50 uppercase text-gray-900">
+                                    {{ settings('school_name', 'Nama Sekolah Belum Diatur') }}
+                                </th>
+                            </tr>
+                            <tr>
+                                <th rowspan="2" scope="col" class="px-2 py-3 border sticky left-0 bg-gray-50 text-center font-bold align-middle">No</th>
+                                <th rowspan="2" scope="col" class="px-4 py-3 border text-left sticky left-10 bg-gray-50 align-middle font-bold min-w-[200px]">Nama Guru</th>
+                                <th colspan="{{ $daysInMonth }}" scope="col" class="px-1 py-3 border bg-gray-50 text-center font-bold">
+                                    Bulan {{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y') }}
+                                </th>
+                                <th colspan="4" scope="col" class="px-2 py-3 border bg-gray-50 text-center font-bold">Rekap Jumlah Kehadiran</th>
+                            </tr>
+                            <tr>
+                                @foreach($reportData['dates'] as $dateStr => $meta)
+                                    <th scope="col" class="px-1 py-3 border w-8 text-center">{{ $meta['day'] }}</th>
+                                @endforeach
+                                <th scope="col" class="px-2 py-3 border bg-green-100 text-green-800 text-center">H</th>
+                                <th scope="col" class="px-2 py-3 border bg-yellow-100 text-yellow-800 text-center">I</th>
+                                <th scope="col" class="px-2 py-3 border bg-yellow-100 text-yellow-800 text-center">S</th>
+                                <th scope="col" class="px-2 py-3 border bg-red-100 text-red-800 text-center">A</th>
                             </tr>
                             @endif
                         </thead>
@@ -202,52 +216,46 @@
                                 @endforeach
                             @else
                                 @if($isFutureOrCurrent)
-                                    <tr>
-                                        <td colspan="{{ $daysInMonth + 6 }}" class="px-6 py-4 text-center">Belum ada data laporan.</td>
-                                    </tr>
-                                @else
-                                    @foreach($teachers as $index => $teacher)
+                                <tr>
+                                    <td colspan="{{ 31 + 4 + 2 }}" class="px-6 py-4 text-center text-gray-500">
+                                        Laporan belum tersedia. Bulan ini sedang berjalan.
+                                    </td>
+                                </tr>
+                            @else
+                                @if($reportData)
+                                    @foreach($reportData['rows'] as $index => $row)
                                         <tr class="bg-white border-b">
-                                            <td class="px-2 py-3 border sticky left-0 bg-white">{{ $teachers->firstItem() + $index }}</td>
-                                            <td class="px-4 py-3 border text-left sticky left-10 bg-white font-medium text-gray-900 whitespace-nowrap">{{ $teacher->name }}</td>
+                                            <td class="px-2 py-3 border sticky left-0 bg-white">{{ $loop->iteration }}</td>
+                                            <td class="px-4 py-3 border text-left sticky left-10 bg-white font-medium text-gray-900 whitespace-nowrap">{{ $row['name'] }}</td>
                                             
-                                            @php
-                                                $h = 0; $i_count = 0; $s = 0; $a = 0;
-                                            @endphp
-
-                                            @for($d = 1; $d <= $daysInMonth; $d++)
-                                                @php
-                                                    $currentDateStr = sprintf('%04d-%02d-%02d', $year, $month, $d);
-                                                    $currentDate = \Carbon\Carbon::parse($currentDateStr);
-                                                    $att = $teacher->attendances->firstWhere('dates', $currentDate);
-                                                    $code = '-';
-                                                    $class = '';
-
-                                                    if ($att) {
-                                                        $name = $att->attendanceCode->name;
-                                                        if ($name == 'Hadir') { $code = 'H'; $h++; $class='bg-green-100 text-green-800'; }
-                                                        elseif ($name == 'Izin') { $code = 'I'; $i_count++;  $class='bg-yellow-100 text-yellow-800'; }
-                                                        elseif ($name == 'Sakit') { $code = 'S'; $s++;  $class='bg-yellow-100 text-yellow-800'; }
-                                                        elseif ($name == 'Alpha') { $code = 'A'; $a++;  $class='bg-red-100 text-red-800'; }
-                                                        elseif ($att->is_late) { $code = 'T'; $h++; $class='bg-orange-100 text-orange-800'; } 
-                                                    } else {
-                                                         if (!$currentDate->isSunday()) {
-                                                            $code = 'A';
-                                                            $a++;
-                                                            $class = 'bg-red-100 text-red-800';
-                                                        }
-                                                    }
-                                                @endphp
-                                                <td class="px-1 py-1 border text-center text-xs {{ $class }}">{{ $code }}</td>
-                                            @endfor
+                                            @foreach($reportData['dates'] as $dateStr => $meta)
+                                                @if($meta['is_holiday'])
+                                                    @if($loop->parent->first)
+                                                        <td rowspan="{{ $reportData['attendee_count'] }}" class="px-1 py-1 border text-center text-xs bg-blue-100 text-blue-800 font-bold" style="vertical-align: middle;">
+                                                            <div style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; margin: 0 auto; min-height: 100px;">
+                                                                {{ $meta['holiday_info'] }}
+                                                            </div>
+                                                        </td>
+                                                    @endif
+                                                @else
+                                                     <td class="px-1 py-1 border text-center text-xs {{ $row['statuses'][$dateStr]['class'] }}">
+                                                         {{ $row['statuses'][$dateStr]['code'] }}
+                                                     </td>
+                                                @endif
+                                            @endforeach
                                             
-                                            <td class="px-2 py-3 border font-bold bg-green-50 text-green-900">{{ $h }}</td>
-                                            <td class="px-2 py-3 border font-bold bg-yellow-50 text-yellow-900">{{ $i_count }}</td>
-                                            <td class="px-2 py-3 border font-bold bg-yellow-50 text-yellow-900">{{ $s }}</td>
-                                            <td class="px-2 py-3 border font-bold bg-red-50 text-red-900">{{ $a }}</td>
+                                            <td class="px-2 py-3 border font-bold bg-green-50 text-green-900">{{ $row['summary']['H'] }}</td>
+                                            <td class="px-2 py-3 border font-bold bg-yellow-50 text-yellow-900">{{ $row['summary']['S'] }}</td>
+                                            <td class="px-2 py-3 border font-bold bg-blue-50 text-blue-900">{{ $row['summary']['I'] }}</td>
+                                            <td class="px-2 py-3 border font-bold bg-red-50 text-red-900">{{ $row['summary']['A'] }}</td>
                                         </tr>
                                     @endforeach
+                                @else
+                                    <tr>
+                                         <td colspan="100" class="text-center py-4">Tidak ada data.</td>
+                                    </tr>
                                 @endif
+                            @endif
                             @endif
                         </tbody>
                     </table>
