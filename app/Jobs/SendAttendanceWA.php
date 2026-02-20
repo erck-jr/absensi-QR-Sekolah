@@ -47,8 +47,8 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        // 2. Random Delay (5-15 seconds)
-        sleep(rand(5, 15));
+        // 2. Fixed Delay (2 seconds limit) to handle 1200+ scale without hitting 90min expiry
+        sleep(2);
 
         // 3. Check Expiration (> 90 minutes)
         if ($this->attendance->created_at->diffInMinutes(now()) > 90) {
