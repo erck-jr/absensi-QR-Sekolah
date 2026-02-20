@@ -35,7 +35,16 @@
                             <input type="hidden" id="scan_mode" value="in">
                         </div>
 
-                        <div id="reader" width="100%" class="rounded-lg overflow-hidden border-2 border-dashed border-gray-300"></div>
+                        <div id="reader" width="100%" class="rounded-lg overflow-hidden border-2 border-dashed border-gray-300 mb-4"></div>
+
+                        <!-- Manual Input Form -->
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                            <label for="manual_code" class="block mb-2 text-sm font-medium text-gray-900">Input Manual (Jika Lensa Bermasalah)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="manual_code" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5" placeholder="Masukkan Kode Unik" autocomplete="off">
+                                <button type="button" id="btn-manual-submit" class="text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none">Submit</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Right: Result -->
@@ -131,15 +140,46 @@
         shiftDropdown.addEventListener('change', function() {
             localStorage.setItem('last_active_shift_id', this.value);
         });
-        
-        function onScanSuccess(decodedText, decodedResult) {
+
+        // Manual Input Logic
+        const manualCodeInput = document.getElementById('manual_code');
+        const manualSubmitBtn = document.getElementById('btn-manual-submit');
+
+        manualSubmitBtn.addEventListener('click', function() {
+            const code = manualCodeInput.value.trim();
+            if (code) {
+                processScan(code);
+                manualCodeInput.value = ''; // clear input after submit
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Peringatan',
+                        text: 'Silakan masukkan kode unik terlebih dahulu!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    alert('Silakan masukkan kode unik terlebih dahulu!');
+                }
+            }
+        });
+
+        manualCodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                manualSubmitBtn.click();
+            }
+        });
+
+        function processScan(decodedText) {
             // Prevent multiple scans
             if (window.isScanning) return;
             window.isScanning = true;
 
             // Audio Feedback
             let audio = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3'); // Simple beep
-            audio.play();
+            audio.play().catch(e => console.log('Audio playback blocked'));
 
             const shiftId = shiftDropdown.value;
             const scanMode = modeHidden.value;
@@ -170,6 +210,10 @@
             .finally(() => {
                 setTimeout(() => { window.isScanning = false; }, 2000); // 2 seconds cooldown
             });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            processScan(decodedText);
         }
 
         function onScanFailure(error) {
@@ -213,6 +257,16 @@
             setTimeout(() => {
                 successAlert.classList.add('hidden');
             }, 3000);
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: status === 'warning' ? 'warning' : 'success',
+                    title: status === 'warning' ? 'Perhatian' : 'Berhasil',
+                    text: message,
+                    timer: 2500,
+                    showConfirmButton: false
+                });
+            }
         }
 
         function showError(msg) {
@@ -224,6 +278,16 @@
              setTimeout(() => {
                 errAlert.classList.add('hidden');
             }, 3000);
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: msg,
+                    timer: 2500,
+                    showConfirmButton: false
+                });
+            }
         }
     </script>
     @endpush
