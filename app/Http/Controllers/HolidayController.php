@@ -109,7 +109,7 @@ class HolidayController extends Controller
             $startDate->addDay();
         }
 
-        return redirect()->route('master.holidays.index')->with('success', 'Data libur berhasil diperbarui');
+        return redirect()->route('holidays.index')->with('success', 'Data libur berhasil diperbarui');
     }
 
     public function destroy($id)
@@ -122,6 +122,6 @@ class HolidayController extends Controller
             $holiday->delete();
         }
         
-        return redirect()->route('master.holidays.index')->with('success', 'Data libur berhasil dihapus');
+        return redirect()->route('holidays.index')->with('success', 'Data libur berhasil dihapus');
     }
 }
