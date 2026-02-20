@@ -41,18 +41,18 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        // 1. Random Delay (5-15 seconds)
-        sleep(rand(5, 15));
-
-        // 2. Check Expiration (> 90 minutes)
-        if ($this->attendance->created_at->diffInMinutes(now()) > 90) {
-            $this->logToDb('expired', 'Message expired (older than 90 mins)');
+        // 1. Check Gateway First (Avoid unnecessary sleep if inactive)
+        $gateway = WaGateway::where('is_active', true)->first();
+        if (!$gateway) {
             return;
         }
 
-        // 3. Get Gateway
-        $gateway = WaGateway::where('is_active', true)->first();
-        if (!$gateway) {
+        // 2. Random Delay (5-15 seconds)
+        sleep(rand(5, 15));
+
+        // 3. Check Expiration (> 90 minutes)
+        if ($this->attendance->created_at->diffInMinutes(now()) > 90) {
+            $this->logToDb('expired', 'Message expired (older than 90 mins)');
             return;
         }
 
