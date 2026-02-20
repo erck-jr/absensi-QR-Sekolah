@@ -1,59 +1,141 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistem Absensi QR Code Sekolah & WhatsApp Gateway v1.0
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi absensi modern berbasis web yang dirancang khusus untuk lingkungan sekolah. Memudahkan pencatatan kehadiran siswa dan guru menggunakan teknologi QR Code dengan integrasi notifikasi WhatsApp secara real-time kepada orang tua.
 
-## About Laravel
+## 🚀 Fitur Unggulan
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 1. Absensi & Scanning Cepat
+- **Scan QR Code**: Siswa dan guru cukup melakukan scan kartu identitas pada perangkat yang disediakan sekolah.
+- **Mode Dual (Masuk & Pulang)**: Sistem secara otomatis membedakan waktu check-in (masuk) dan check-out (pulang).
+- **Validasi Shift**: Mencegah absensi di luar jam yang ditentukan dan mendeteksi keterlambatan secara otomatis.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 2. Notifikasi WhatsApp Real-time (OneSender)
+- **Pesan Otomatis**: Orang tua langsung menerima pesan WhatsApp saat siswa melakukan scan masuk atau pulang.
+- **Informasi Lengkap**: Pesan mencakup Nama, Jam Scan, Status (Tepat Waktu/Terlambat/Pulang Cepat), dan Tanggal.
+- **Queue System**: Mengirim pesan di latar belakang (background job) agar proses scanning tetap cepat tanpa loading lama.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 3. Generator ID Card Otomatis
+- **Desain Template**: Menggunakan template kartu yang dapat disesuaikan.
+- **Auto-Generate**: Membuat kartu pelajar/guru lengkap dengan Foto, Nama, NIS/NUPTK, dan QR Code unik.
+- **Download Massal**: Fitur unduh semua kartu dalam format .ZIP per kelas untuk kemudahan pencetakan.
 
-## Learning Laravel
+### 4. Manajemen Data & Laporan
+- **Laporan Harian & Bulanan**: Rekapitulasi kehadiran yang detail.
+- **Matriks Kehadiran**: Tampilan visual kehadiran satu bulan penuh dalam satu layar.
+- **Export Excel**: Unduh laporan kehadiran untuk kebutuhan administrasi sekolah.
+- **Manajemen Guru & Siswa**: Import data siswa via Excel dan manajemen data induk yang mudah.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 🛠 Teknologi yang Digunakan
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **Backend**: Laravel 12 (PHP Framework)
+- **Frontend**: Livewire, Blade Templating, Alpine.js
+- **Styling**: Tailwind CSS, Flowbite
+- **Database**: MySQL
+- **Dependensi Utama**:
+  - `simplesoftwareio/simple-qrcode`: Generator QR Code.
+  - `intervention/image`: Manipulasi gambar untuk ID Card.
+  - `maatwebsite/excel`: Import/Export data Excel.
+  - `OneSender`: Provider API WhatsApp Gateway.
 
-## Laravel Sponsors
+## 🔄 Alur Kerja Sistem (Business Process)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1.  **Persiapan Data (Admin/Operator)**
+    -   Admin menginput data Tahun Ajaran, Kelas, Shift, dan Hari Libur.
+    -   Admin menginput/import data Siswa dan Guru.
+    -   Admin mengatur API Token WhatsApp Gateway.
 
-### Premium Partners
+2.  **Pencetakan Kartu**
+    -   Admin mengakses menu Generator ID Card.
+    -   Sistem men-generate kartu ID yang berisi QR Code unik untuk setiap pengguna.
+    -   Kartu dicetak dan dibagikan kepada Siswa/Guru.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+3.  **Proses Absensi (Harian)**
+    -   Admin/Piket membuka halaman **Scanner** di perangkat sekolah (Tablet/PC + Webcam/Scanner).
+    -   Siswa/Guru melakukan scan kartu ID ke kamera/alat scan.
+    -   **Sistem Memproses**:
+        -   Mengecek validitas QR Code.
+        -   Mengecek status Shift (Jam Masuk/Pulang).
+        -   Mencatat waktu kehadiran.
+        -   Menandai status (Tepat Waktu / Terlambat / Pulang Cepat).
+    -   **Notifikasi**: Sistem mengirim perintah ke Job Queue untuk mengirim pesan WA ke nomor HP yang terdaftar.
 
-## Contributing
+4.  **Pelaporan**
+    -   Data kehadiran tersimpan otomatis.
+    -   Admin dapat memantau rekap harian di Dashboard.
+    -   Wali kelas/Kepala sekolah dapat menarik laporan absensi bulanan dalam format Excel.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## ⚙️ Instalasi & Konfigurasi
 
-## Code of Conduct
+Ikuti langkah-langkah berikut untuk menjalankan aplikasi di komputer lokal (Localhost):
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Prasyarat
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- MySQL Database
 
-## Security Vulnerabilities
+### Langkah Instalasi
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1.  **Clone Repository**
+    ```bash
+    git clone https://github.com/username/absensi-qr-sekolah.git
+    cd absensi-qr-sekolah
+    ```
 
-## License
+2.  **Install Dependensi PHP & Asset**
+    ```bash
+    composer install
+    npm install
+    ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+3.  **Konfigurasi Environment**
+    -   Duplikat file `.env.example` menjadi `.env`.
+    -   Sesuaikan konfigurasi database:
+    ```env
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=nama_database_anda
+    DB_USERNAME=root
+    DB_PASSWORD=
+    ```
+
+4.  **Generate Key & Migrasi Database**
+    ```bash
+    php artisan key:generate
+    php artisan migrate --seed
+    ```
+    *(Gunakan `--seed` untuk mengisi data awal / akun admin default)*
+
+5.  **Link Storage (Wajib untuk Foto & ID Card)**
+    ```bash
+    php artisan storage:link
+    ```
+
+6.  **Build Frontend Asset**
+    ```bash
+    npm run build
+    ```
+
+### Menjalankan Aplikasi
+
+Untuk menjalankan aplikasi secara penuh, Anda perlu menjalankan **dua terminal**:
+
+**Terminal 1 (Server Web):**
+```bash
+php artisan serve
+```
+
+**Terminal 2 (Queue Worker - Untuk WhatsApp):**
+Agar notifikasi WhatsApp terkirim, worker harus berjalan.
+```bash
+php artisan queue:work
+```
+*Note: Tanpa menjalankan queue work, pesan WA hanya akan antri di database dan tidak terkirim.*
+
+## 🔑 Akun Default (Seeder)
+- **Email**: admin@admin.com
+- **Password**: password
+
+---
+Dibuat menggunakan Laravel.
