@@ -19,12 +19,6 @@
                     @include('profile.partials.update-password-form')
                 </div>
             </x-material-card>
-
-            <x-material-card title="Delete Account" icon="warning" color="red">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
-                </div>
-            </x-material-card>
         </div>
     </div>
 </x-app-layout>
