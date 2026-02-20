@@ -42,7 +42,7 @@
                 <div id="idcard-content" class="tab-content hidden">
                     @if($hasIdCard)
                         <div class="flex flex-col items-center mb-6">
-                            <img src="{{ $idCardUrl }}" alt="ID Card" class="max-w-md w-full shadow-lg rounded-lg mb-4">
+                            <img src="{{ $idCardUrl }}?t={{ time() }}" alt="ID Card" class="max-w-md w-full shadow-lg rounded-lg mb-4">
                             <a href="{{ $idCardUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2   focus:outline-none ">
                                 Unduh ID Card
                             </a>

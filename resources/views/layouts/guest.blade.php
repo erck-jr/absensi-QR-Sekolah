@@ -55,6 +55,7 @@
                 <div class="mt-12 text-center">
                     <p class="text-gray-400 text-xs">
                         &copy; {{ date('Y') }} {{ settings('app_name') ?? config('app.name', 'Laravel') }}. All rights reserved.
+                        <br>Created by : <a href="https://instagram.com/el_miro23" target="_blank" class="text-orange-500 hover:text-orange-600">Hendrik J.R Samkay</a>
                     </p>
                 </div>
             </div>
