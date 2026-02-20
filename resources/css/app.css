@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@plugin "flowbite/plugin";
+
+@theme {
+    --font-sans: Figtree, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+    --color-navy-50: #E7EBF1;
+    --color-navy-100: #C2CCD9;
+    --color-navy-200: #99ABC0;
+    --color-navy-300: #708BA7;
+    --color-navy-400: #4D6F91;
+    --color-navy-500: #2A537A;
+    --color-navy-600: #224667;
+    --color-navy-700: #1B3751;
+    --color-navy-800: #14293D;
+    --color-navy-900: #0C1C29;
+    --color-navy-950: #001f3f;
+
+    --color-orange-50: #fff7ed;
+    --color-orange-100: #ffedd5;
+    --color-orange-200: #fed7aa;
+    --color-orange-300: #fdba74;
+    --color-orange-400: #fb923c;
+    --color-orange-500: #f97316;
+    --color-orange-600: #ea580c;
+    --color-orange-700: #c2410c;
+    --color-orange-800: #9a3412;
+    --color-orange-900: #7c2d12;
+    --color-orange-950: #431407;
+    --color-orange-950: #431407;
+}
+
+/* Global Select Styling Fix */
+select {
+    @apply pr-8;
+    /* Ensure space for chevron */
+}
+
+/* Simple Datatables Flowbite Theme Integration */
+.datatable-wrapper {
+    @apply border border-gray-200 rounded-lg bg-white shadow-sm;
+}
+
+.datatable-top {
+    @apply flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border-b border-gray-100;
+}
+
+.datatable-bottom {
+    @apply flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border-t border-gray-100;
+}
+
+.datatable-search .datatable-input {
+    @apply bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5;
+}
+
+.datatable-dropdown label {
+    @apply text-sm font-medium text-gray-900 flex items-center gap-2;
+}
+
+.datatable-selector {
+    @apply bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 pr-8;
+}
+
+/* Pagination Styling */
+.datatable-pagination ul {
+    @apply flex items-center -space-x-px h-8 text-sm m-0 p-0;
+}
+
+.datatable-pagination li {
+    @apply list-none;
+}
+
+.datatable-pagination li button {
+    @apply cursor-pointer px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 no-underline block;
+}
+
+/* Rounded corners for first and last items */
+.datatable-pagination li:first-child button {
+    @apply rounded-s-lg;
+}
+
+.datatable-pagination li:last-child button {
+    @apply rounded-e-lg;
+}
+
+/* Active State */
+.datatable-pagination li.datatable-active button {
+    @apply text-blue-600 border border-gray-300 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-bold;
+}
+
+/* Disabled State */
+.datatable-pagination li.datatable-disabled button {
+    @apply text-gray-300 pointer-events-none bg-white;
+}
+
+/* Table Styling */
+.datatable-table {
+    @apply w-full text-sm text-left text-gray-500 border-collapse;
+}
+
+.datatable-table thead th {
+    @apply bg-gray-50 text-gray-700 px-6 py-3 font-bold border-b border-gray-200 uppercase text-xs tracking-wider;
+}
+
+.datatable-table thead th a {
+    @apply text-gray-700 no-underline block w-full h-full;
+}
+
+.datatable-table tbody td {
+    @apply px-6 py-4 border-b border-gray-100;
+}
+
+.datatable-table tbody tr:last-child td {
+    @apply border-b-0;
+}
+
+.datatable-table tbody tr:hover {
+    @apply bg-gray-50/50;
+}
+
+.datatable-info {
+    @apply text-sm text-gray-700;
+}
+
+/* Specificity bridge for simple-datatables */
+.datatable-table>thead>tr>th {
+    background-color: var(--color-gray-50) !important;
+    color: var(--color-gray-700) !important;
+    border-bottom-width: 1px !important;
+}
+
+/* Modal Backdrop Glassmorphism */
+[modal-backdrop] {
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    background-color: rgba(31, 41, 55, 0.5) !important;
+}
+
+.modal-content-glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl;
+}
+
+/* Responsive Table Improvements */
+@media (max-width: 768px) {
+    .datatable-top {
+        @apply flex-col space-y-2 p-2;
+    }
+
+    .datatable-search {
+        @apply w-full;
+    }
+
+    .datatable-dropdown {
+        @apply hidden;
+        /* Hide length menu on mobile to save space */
+    }
+
+    .datatable-container {
+        @apply overflow-x-auto -mx-4 px-4;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .datatable-table thead th {
+        @apply px-3 py-2 text-[10px];
+    }
+
+    .datatable-table tbody td {
+        @apply px-3 py-2 text-xs;
+    }
+
+    .datatable-bottom {
+        @apply flex-col space-y-4 items-center p-4;
+    }
+
+    .datatable-info {
+        @apply text-xs order-2;
+    }
+
+    .datatable-pagination {
+        @apply order-1;
+    }
+}
