@@ -60,7 +60,7 @@ class TeacherDailyExport implements FromCollection, WithHeadings, WithMapping, S
             \Carbon\Carbon::parse($this->date)->format('d/m/Y'),
             $teacher->nuptk,
             $teacher->name,
-            $attendance ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-',
+            ($attendance && $attendance->check_in) ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-',
             ($attendance && $attendance->check_out) ? \Carbon\Carbon::parse($attendance->check_out)->format('H:i') : '-',
             $attendance ? $attendance->work_duration : '-',
             $statusText,
