@@ -71,7 +71,6 @@ class RetryExpiredWa extends Command
                     $sentLogs = WaLog::where('attendance_id', $log->attendance_id)
                         ->where('attendance_type', $log->attendance_type)
                         ->where('status', 'sent')
-                        ->where('dates', $log->dates) // Assuming dates is shared or we use created_at
                         ->where('created_at', '>=', $log->created_at->startOfDay())
                         ->get();
 
