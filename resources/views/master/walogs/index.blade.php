@@ -50,39 +50,45 @@
                                 <th scope="col" class="px-6 py-3">Penerima</th>
                                 <th scope="col" class="px-6 py-3">Status</th>
                                 <th scope="col" class="px-6 py-3">Pesan</th>
-                                <th scope="col" class="px-6 py-3">Detail</th>
+                                <th scope="col" class="px-6 py-3">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($logs as $log)
                                 <tr class="bg-white border-b hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-6 py-4 whitespace-nowrap text-xs">
                                         {{ $log->created_at->format('d/m/Y H:i') }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        {{ $log->recipient_number }}
-                                        <div class="text-xs text-gray-400 capitalize">{{ $log->attendance_type }}</div>
+                                        <div class="font-medium text-gray-900">{{ $log->recipient_number }}</div>
+                                        <div class="text-[10px] text-gray-400 uppercase tracking-tighter">{{ $log->attendance_type }}</div>
                                     </td>
                                     <td class="px-6 py-4">
                                         @if($log->status === 'sent')
-                                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded border border-green-400">Terkirim</span>
+                                            <span class="bg-green-100 text-green-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded border border-green-200">Sent</span>
                                         @elseif($log->status === 'failed')
-                                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded border border-red-400">Gagal</span>
+                                            <span class="bg-red-100 text-red-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded border border-red-200">Failed</span>
                                         @else
-                                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded border border-yellow-400">{{ ucfirst($log->status) }}</span>
+                                            <span class="bg-yellow-100 text-yellow-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded border border-yellow-200">{{ $log->status }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 max-w-xs truncate" title="{{ $log->message_content }}">
+                                    <td class="px-6 py-4 max-w-xs truncate text-xs" title="{{ $log->message_content }}">
                                         {{ $log->message_content }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        @if($log->error_details)
-                                            <span class="text-xs text-red-600 italic" title="{{ $log->error_details }}">
-                                                {{ Str::limit($log->error_details, 50) }}
-                                            </span>
-                                        @else
-                                            -
-                                        @endif
+                                        <button type="button" 
+                                            onclick="showLogDetail({{ json_encode([
+                                                'recipient' => $log->recipient_number,
+                                                'type' => $log->attendance_type,
+                                                'status' => $log->status,
+                                                'time' => $log->created_at->format('d/m/Y H:i:s'),
+                                                'message' => $log->message_content,
+                                                'error' => $log->error_details,
+                                                'gateway' => $log->gateway->name ?? '-'
+                                            ]) }})"
+                                            class="text-blue-600 hover:text-blue-900 font-medium text-xs flex items-center">
+                                            <span class="material-icons text-xs mr-1">visibility</span> Detail
+                                        </button>
                                     </td>
                                 </tr>
                             @empty
@@ -102,4 +108,107 @@
             </x-material-card>
         </div>
     </div>
+
+    <!-- Detail Modal -->
+    <div id="logDetailModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full bg-gray-900 bg-opacity-50 flex items-center justify-center">
+        <div class="relative w-full max-w-2xl max-h-full">
+            <div class="relative bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+                <!-- Header -->
+                <div class="flex items-start justify-between p-4 border-b bg-gray-50">
+                    <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <span class="material-icons mr-2 text-blue-600">info</span> Detail Log WhatsApp
+                    </h3>
+                    <button type="button" onclick="closeLogModal()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <!-- Body -->
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <span class="block text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Penerima</span>
+                            <span id="detail_recipient" class="text-sm font-semibold text-gray-800">-</span>
+                            <span id="detail_type" class="block text-[10px] text-gray-500 capitalize"></span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <span class="block text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Status</span>
+                            <div id="status_badge_container"></div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <span class="block text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Waktu Kirim</span>
+                            <span id="detail_time" class="text-sm font-semibold text-gray-800">-</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <span class="block text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Gateway</span>
+                            <span id="detail_gateway" class="text-sm font-semibold text-gray-800">-</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="block text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Isi Pesan</span>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed" id="detail_message">
+                        </div>
+                    </div>
+
+                    <div id="status_details_container" class="rounded-xl border p-4">
+                        <span id="detail_status_label" class="block text-[10px] uppercase font-bold tracking-wider mb-1">Detail Status</span>
+                        <div class="text-sm italic" id="detail_error">
+                        </div>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <div class="flex items-center p-6 border-t bg-gray-50 justify-end">
+                    <button type="button" onclick="closeLogModal()" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showLogDetail(data) {
+            document.getElementById('detail_recipient').textContent = data.recipient;
+            document.getElementById('detail_type').textContent = data.type;
+            document.getElementById('detail_time').textContent = data.time;
+            document.getElementById('detail_gateway').textContent = data.gateway;
+            document.getElementById('detail_message').textContent = data.message;
+            
+            const badgeContainer = document.getElementById('status_badge_container');
+            if (data.status === 'sent') {
+                badgeContainer.innerHTML = '<span class="bg-green-100 text-green-800 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full border border-green-200">Terkirim</span>';
+            } else if (data.status === 'failed') {
+                badgeContainer.innerHTML = '<span class="bg-red-100 text-red-800 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full border border-red-200">Gagal</span>';
+            } else {
+                badgeContainer.innerHTML = `<span class="bg-yellow-100 text-yellow-800 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full border border-yellow-200">${data.status}</span>`;
+            }
+
+            const statusContainer = document.getElementById('status_details_container');
+            const statusLabel = document.getElementById('detail_status_label');
+            const statusText = document.getElementById('detail_error');
+            
+            if (data.status === 'sent') {
+                statusContainer.className = 'bg-green-50 p-4 rounded-xl border border-green-100';
+                statusLabel.className = 'block text-[10px] text-green-600 uppercase font-bold tracking-wider mb-1';
+                statusText.className = 'text-sm text-green-700 font-medium';
+                statusText.textContent = 'Pesan telah berhasil disampaikan ke gateway dan sedang diproses/terkirim.';
+            } else if (data.status === 'failed') {
+                statusContainer.className = 'bg-red-50 p-4 rounded-xl border border-red-100';
+                statusLabel.className = 'block text-[10px] text-red-600 uppercase font-bold tracking-wider mb-1';
+                statusText.className = 'text-sm text-red-700 italic';
+                statusText.textContent = data.error || 'Terjadi kesalahan saat pengiriman pesan.';
+            } else {
+                statusContainer.className = 'bg-yellow-50 p-4 rounded-xl border border-yellow-100';
+                statusLabel.className = 'block text-[10px] text-yellow-600 uppercase font-bold tracking-wider mb-1';
+                statusText.className = 'text-sm text-yellow-700';
+                statusText.textContent = `Status saat ini: ${data.status}`;
+            }
+
+            document.getElementById('logDetailModal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeLogModal() {
+            document.getElementById('logDetailModal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    </script>
 </x-app-layout>
