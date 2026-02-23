@@ -86,7 +86,7 @@ class ScannerController extends Controller
                         'shift_id' => $shift->id,
                         'attendance_id' => $code->id,
                         'dates' => $today,
-                        'check_in' => $now,
+                        'check_in' => $now->format('H:i:s'),
                         'is_late' => $isLate,
                     ]);
                 } else {
@@ -95,7 +95,7 @@ class ScannerController extends Controller
                         'shift_id' => $shift->id,
                         'attendance_id' => $code->id,
                         'dates' => $today,
-                        'check_in' => $now,
+                        'check_in' => $now->format('H:i:s'),
                         'is_late' => $isLate,
                     ]);
                 }
@@ -134,7 +134,7 @@ class ScannerController extends Controller
                 }
 
                 // Perform Check-Out
-                $attendance->update(['check_out' => $now]);
+                $attendance->update(['check_out' => $now->format('H:i:s')]);
 
                 // Determine Early Checkout
                 $checkOutTime = Carbon::parse($shift->check_out_time);
