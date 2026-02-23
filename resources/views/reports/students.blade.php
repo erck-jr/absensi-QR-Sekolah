@@ -143,6 +143,7 @@
                                 <th scope="col" class="px-6 py-3 text-left">Nama Siswa</th>
                                 <th scope="col" class="px-6 py-3 text-left">Kelas</th>
                                 <th scope="col" class="px-6 py-3 text-left">Waktu Masuk</th>
+                                <th scope="col" class="px-6 py-3 text-left">Waktu Pulang</th>
                                 <th scope="col" class="px-6 py-3 text-left">Status</th>
                                 <th scope="col" class="px-6 py-3 text-left">Keterangan</th>
                                 <th scope="col" class="px-6 py-3 text-left">Aksi</th>
@@ -219,6 +220,7 @@
                                             <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap text-left">{{ $student->name }}</td>
                                             <td class="px-6 py-4 text-left">{{ $student->classRoom->name ?? '-' }}</td>
                                             <td class="px-6 py-4 text-left">{{ $attendance ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-' }}</td>
+                                            <td class="px-6 py-4 text-left">{{ $attendance ? \Carbon\Carbon::parse($attendance->check_out)->format('H:i') : '-' }}</td>
                                             <td class="px-6 py-4 text-left">
                                                 <span class="{{ $statusClass }} text-xs font-medium mr-2 px-2.5 py-0.5 rounded">
                                                     {{ $statusText }}

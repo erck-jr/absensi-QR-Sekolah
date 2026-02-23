@@ -31,6 +31,7 @@ class TeacherDailyExport implements FromCollection, WithHeadings, WithMapping, S
             'Nama Guru',
             'Waktu Masuk',
             'Waktu Pulang',
+            'Total Jam Kerja',
             'Status',
             'Keterangan'
         ];
@@ -61,6 +62,7 @@ class TeacherDailyExport implements FromCollection, WithHeadings, WithMapping, S
             $teacher->name,
             $attendance ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-',
             ($attendance && $attendance->check_out) ? \Carbon\Carbon::parse($attendance->check_out)->format('H:i') : '-',
+            $attendance ? $attendance->work_duration : '-',
             $statusText,
             $attendance->note ?? '-'
         ];

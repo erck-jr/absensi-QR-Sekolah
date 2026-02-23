@@ -131,6 +131,8 @@
                                 <th scope="col" class="px-6 py-3 text-left">NUPTK</th>
                                 <th scope="col" class="px-6 py-3 text-left">Nama Guru</th>
                                 <th scope="col" class="px-6 py-3 text-left">Waktu Masuk</th>
+                                <th scope="col" class="px-6 py-3 text-left">Waktu Pulang</th>
+                                <th scope="col" class="px-6 py-3 text-left">Total Jam Kerja</th>
                                 <th scope="col" class="px-6 py-3 text-left">Status</th>
                                 <th scope="col" class="px-6 py-3 text-left">Keterangan</th>
                                 <th scope="col" class="px-6 py-3 text-left">Aksi</th>
@@ -191,12 +193,15 @@
                                                 $statusClass = 'bg-red-100 text-red-800';
                                             }
                                         }
+
                                     @endphp
                                     <tr class="bg-white border-b hover:bg-gray-50">
                                         <td class="px-6 py-4 text-left">{{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</td>
                                         <td class="px-6 py-4 text-left">{{ $teacher->nuptk }}</td>
                                         <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap text-left">{{ $teacher->name }}</td>
                                         <td class="px-6 py-4 text-left">{{ $attendance ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-' }}</td>
+                                        <td class="px-6 py-4 text-left">{{ $attendance ? \Carbon\Carbon::parse($attendance->check_out)->format('H:i') : '-' }}</td>
+                                        <td class="px-6 py-4 text-left">{{ $attendance ? $attendance->work_duration : '-' }}</td>
                                         <td class="px-6 py-4 text-left">
                                             <span class="{{ $statusClass }} text-xs font-medium mr-2 px-2.5 py-0.5 rounded">
                                                 {{ $statusText }}
