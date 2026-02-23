@@ -18,17 +18,19 @@ class SendAttendanceWA implements ShouldQueue
     public string $messageType; // 'check_in' or 'check_out'
     public bool $isLate;
     public bool $isEarly;
+    public bool $ignoreExpiration;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($attendance, string $type, string $messageType = 'check_in', bool $isLate = false, bool $isEarly = false)
+    public function __construct($attendance, string $type, string $messageType = 'check_in', bool $isLate = false, bool $isEarly = false, bool $ignoreExpiration = false)
     {
         $this->attendance = $attendance;
         $this->type = $type;
         $this->messageType = $messageType;
         $this->isLate = $isLate;
         $this->isEarly = $isEarly;
+        $this->ignoreExpiration = $ignoreExpiration;
     }
 
     /**
@@ -42,31 +44,34 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        // 2. Fixed Delay (2 seconds limit) to handle 1200+ scale without hitting 90min expiry
-        sleep(2);
+        // 2. Fetch User & Recipient Early (To ensure logs have valid data)
+        $user = ($this->type === 'student') ? $this->attendance->student : $this->attendance->teacher;
+
+        if (!$user) {
+            $this->logToDb('failed', 'User record not found for ' . $this->type . ' ID: ' . ($this->attendance->student_id ?? $this->attendance->teacher_id), $gateway->id);
+            return;
+        }
+        
+        $recipient = $user->phone;
 
         // 3. Check Expiration (> 90 minutes)
-        if ($this->attendance->created_at->diffInMinutes(now()) > 90) {
-            $this->logToDb('expired', 'Message expired (older than 90 mins)');
+        // Check-in uses created_at, Check-out uses updated_at (when checkout time was recorded)
+        $timestamp = ($this->messageType === 'check_in') ? $this->attendance->created_at : $this->attendance->updated_at;
+        
+        if (!$this->ignoreExpiration && $timestamp->diffInMinutes(now()) > 90) {
+            $this->logToDb('expired', 'Message expired (older than 90 mins)', $gateway->id, $recipient);
             return;
         }
 
-        // 4. Get Message Template Key
+        // 4. Fixed Delay (2 seconds limit) to handle 1200+ scale without hitting 90min expiry
+        sleep(2);
+
+        // 5. Get Message Template Key
         $templateKey = $this->getTemplateKey();
         
         $template = MessageTemplate::where('key', $templateKey)->first();
         // Fallback to default if specific not found (optional, or just use generic text)
         $messageContent = $template ? $template->content : "Absensi {$this->messageType} berhasil.";
-
-        // 5. Replace Placeholders
-        $user = ($this->type === 'student') ? $this->attendance->student : $this->attendance->teacher;
-
-        if (!$user) {
-            $this->logToDb('failed', 'User record not found for ' . $this->type . ' ID: ' . ($this->attendance->student_id ?? $this->attendance->teacher_id));
-            return;
-        }
-        
-        $recipient = $user->phone;
 
         if (empty($recipient)) {
             $this->logToDb('failed', 'Recipient phone number is empty', $gateway->id);
