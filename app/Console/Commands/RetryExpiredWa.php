@@ -23,7 +23,7 @@ class RetryExpiredWa extends Command
      *
      * @var string
      */
-    protected $description = 'Retry sending WhatsApp notifications for logs that are marked as expired, with duplicate prevention';
+    protected $description = 'Retry sending WhatsApp notifications for logs that are marked as expired, with content-aware duplicate prevention';
 
     /**
      * Execute the console command.
@@ -33,7 +33,7 @@ class RetryExpiredWa extends Command
         $limit = (int) $this->option('limit');
         $processedCount = 0;
 
-        $this->info("Starting retry process for expired WA logs (Limit: {$limit})...");
+        $this->info("Starting refined retry process for expired WA logs (Limit: {$limit})...");
 
         // Use chunking to handle large datasets efficiently
         WaLog::where('status', 'expired')
@@ -44,51 +44,52 @@ class RetryExpiredWa extends Command
                         return false; // Stop chunking
                     }
 
-                    $this->line("Processing Log ID: {$log->id} for Attendance ID: {$log->attendance_id} ({$log->attendance_type})");
+                    $this->line("--------------------------------------------------");
+                    $this->line("Processing Log ID: {$log->id} | Attendance ID: {$log->attendance_id} ({$log->attendance_type})");
 
                     $attendance = $log->attendance_type === 'student'
                         ? AttendanceStudent::with('shift')->find($log->attendance_id)
                         : AttendanceTeacher::with('shift')->find($log->attendance_id);
 
                     if (!$attendance) {
-                        $this->error("Attendance record not found for Log ID: {$log->id}. Deleting orphan log.");
+                        $this->error("-> Attendance record not found. Deleting orphan log.");
                         $log->delete();
                         continue;
                     }
 
                     if (!$attendance->shift) {
-                        $this->error("Shift not found for Attendance ID: {$attendance->id}. Skipping.");
+                        $this->error("-> Shift not found for Attendance ID: {$attendance->id}. Skipping.");
                         continue;
                     }
 
+                    // 1. Deduce Message Type (Check-in or Check-out)
                     $messageType = $this->determineMessageType($log, $attendance);
+                    $this->line("-> Deduced Type: " . strtoupper($messageType));
 
-                    // --- DUPLICATE CHECK ---
-                    // Check if there is already a successful 'sent' log for this attendance and message type
-                    // This prevents sending 2 notifications if the command is run multiple times or if one already succeeded.
-                    $alreadySent = WaLog::where('attendance_id', $log->attendance_id)
+                    // 2. Optimized Duplicate Check via Content Analysis
+                    // We look at all "sent" logs for this attendance on that day
+                    $sentLogs = WaLog::where('attendance_id', $log->attendance_id)
                         ->where('attendance_type', $log->attendance_type)
                         ->where('status', 'sent')
-                        // We check the content or try to deduce if it was the same message type
-                        // Since we don't have message_type column yet (unless migration run), we can look at the content or just rely on attendance_id
-                        // But to be safe, if any 'sent' exists for this attendance, we should be careful.
-                        // However, a student has check_in and check_out.
-                        ->where('created_at', '>=', $log->created_at->startOfDay()) 
-                        ->exists();
+                        ->where('dates', $log->dates) // Assuming dates is shared or we use created_at
+                        ->where('created_at', '>=', $log->created_at->startOfDay())
+                        ->get();
 
-                    // Better duplicate check: If we can see the content contains "Masuk" or "Pulang"
-                    // Or simply: if the log we are processing is of a certain type, check if THAT type was sent.
-                    // For now, let's look for a sent log created around the same time or for the same attendance.
-                    
-                    if ($alreadySent) {
-                        // To be more precise, let's check the message content if possible, 
-                        // but since message_type isn't in DB yet, we'll use a conservative approach.
-                        // If it's a check_in log (no check_out in attendance or log is old), check if a sent log exists.
-                        $this->warn("-> A 'sent' log already exists for this attendance today. Skipping to avoid duplicates.");
-                        $log->delete(); // Delete the expired log as it's no longer needed
+                    $alreadySentThisType = false;
+                    foreach ($sentLogs as $sentLog) {
+                        if ($this->isSameMessageType($messageType, $sentLog->message_content)) {
+                            $alreadySentThisType = true;
+                            break;
+                        }
+                    }
+
+                    if ($alreadySentThisType) {
+                        $this->warn("-> A successful '{$messageType}' log already exists. Skipping.");
+                        $log->delete(); 
                         continue;
                     }
 
+                    // 3. Prepare parameters
                     $shift = $attendance->shift;
                     $isLate = false;
                     $isEarly = false;
@@ -100,12 +101,15 @@ class RetryExpiredWa extends Command
                         if ($attendance->check_out) {
                             $checkOutTime = Carbon::parse($shift->check_out_time);
                             $isEarly = Carbon::parse($attendance->check_out)->lt($checkOutTime);
+                        } else {
+                            $this->error("-> No check-out time found for check_out log. Skipping.");
+                            continue;
                         }
                     }
 
                     $this->info("-> Re-dispatching {$messageType} for {$log->attendance_type}.");
 
-                    // Dispatch job with ignoreExpiration = true
+                    // 4. Dispatch job
                     SendAttendanceWA::dispatch(
                         $attendance,
                         $log->attendance_type,
@@ -115,31 +119,63 @@ class RetryExpiredWa extends Command
                         true // ignoreExpiration
                     );
 
-                    // Delete old expired log immediately after re-dispatching
+                    // 5. Cleanup
                     $log->delete();
                     $processedCount++;
                 }
             });
 
+        $this->info("--------------------------------------------------");
         $this->info("Done. Processed {$processedCount} logs.");
     }
 
     /**
-     * Determine if the log was for check-in or check-out.
+     * Determine if the log was for check-in or check-out based on timestamps and data.
      */
     private function determineMessageType($log, $attendance)
     {
+        // If no check-out exists, it must be check-in
         if (!$attendance->check_out) {
             return 'check_in';
         }
 
-        $logCreatedAt = $log->created_at;
+        // Logic: logs are usually created shortly after the activity.
+        // If the log was created BEFORE the check-out was recorded (or much earlier), it's check_in.
+        // If it was created within a reasonable window of the update, it might be check_out.
+        
+        $logTime = $log->created_at;
+        $checkInTime = Carbon::parse($attendance->dates->format('Y-m-d') . ' ' . $attendance->check_in);
+        
+        // If we have check_out, we check its timestamp if updated_at is reliable
+        // Attendance record is updated when check_out is filled.
         $attendanceUpdatedAt = $attendance->updated_at;
 
-        if ($logCreatedAt->diffInMinutes($attendanceUpdatedAt) < 10) {
+        // If the log was created close to the final update of the record (when check_out was likely added)
+        if ($logTime->diffInMinutes($attendanceUpdatedAt) < 15) {
             return 'check_out';
         }
 
+        // Default to check_in if it looks old
         return 'check_in';
+    }
+
+    /**
+     * Analyze message content to see if it matches the intended type.
+     */
+    private function isSameMessageType($type, $content)
+    {
+        $content = strtolower($content);
+        
+        if ($type === 'check_in') {
+            // Keywords for Masuk
+            return str_contains($content, 'absen masuk') || 
+                   str_contains($content, 'masuk pada') || 
+                   str_contains($content, 'terlambat');
+        } else {
+            // Keywords for Pulang
+            return str_contains($content, 'absen pulang') || 
+                   str_contains($content, 'pulang pada') || 
+                   str_contains($content, 'pulang cepat');
+        }
     }
 }
