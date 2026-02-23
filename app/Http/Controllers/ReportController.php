@@ -166,9 +166,16 @@ class ReportController extends Controller
             'date' => 'required|date',
             'attendance_code_id' => 'required|exists:attendance_codes,id',
             'shift_id' => 'required|exists:shifts,id',
-            'check_in' => 'required', // Needed for DB constraint
+            'check_in' => 'required',
+            'check_out' => 'nullable',
             'note' => 'nullable|string'
         ]);
+
+        $attendanceCode = \App\Models\AttendanceCode::findOrFail($request->attendance_code_id);
+
+        if ($attendanceCode->name === 'Hadir' && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Hanya admin yang dapat mengubah status menjadi Hadir.');
+        }
 
         AttendanceStudent::updateOrCreate(
             [
@@ -179,7 +186,8 @@ class ReportController extends Controller
                 'attendance_id' => $request->attendance_code_id,
                 'shift_id' => $request->shift_id,
                 'check_in' => $request->check_in,
-                'is_late' => false, // Default logic or calculation? Manual update usually overrides lateness or sets to false unless specified.
+                'check_out' => $request->check_out,
+                'is_late' => false,
                 'note' => $request->note
             ]
         );
@@ -195,8 +203,15 @@ class ReportController extends Controller
             'attendance_code_id' => 'required|exists:attendance_codes,id',
             'shift_id' => 'required|exists:shifts,id',
             'check_in' => 'required',
+            'check_out' => 'nullable',
             'note' => 'nullable|string'
         ]);
+
+        $attendanceCode = \App\Models\AttendanceCode::findOrFail($request->attendance_code_id);
+
+        if ($attendanceCode->name === 'Hadir' && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Hanya admin yang dapat mengubah status menjadi Hadir.');
+        }
 
         AttendanceTeacher::updateOrCreate(
             [
@@ -207,6 +222,7 @@ class ReportController extends Controller
                 'attendance_id' => $request->attendance_code_id,
                 'shift_id' => $request->shift_id,
                 'check_in' => $request->check_in,
+                'check_out' => $request->check_out,
                 'is_late' => false,
                 'note' => $request->note
             ]

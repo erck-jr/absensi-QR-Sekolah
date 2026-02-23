@@ -211,7 +211,7 @@
                                         <td class="px-6 py-4 text-left">
                                             @if(auth()->user()->role === 'admin')
                                             <button type="button" 
-                                                onclick="openModal('{{ $teacher->id }}', '{{ $teacher->name }}', '{{ $attendance ? $attendance->attendance_id : '' }}', '{{ $attendance ? $attendance->shift_id : '' }}', '{{ $attendance ? $attendance->check_in : '' }}', '{{ $attendance->note ?? '' }}')"
+                                                onclick="openModal('{{ $teacher->id }}', '{{ $teacher->name }}', '{{ $attendance ? $attendance->attendance_id : '' }}', '{{ $attendance ? $attendance->shift_id : '' }}', '{{ $attendance ? $attendance->check_in : '' }}', '{{ $attendance ? $attendance->check_out : '' }}', '{{ $attendance->note ?? '' }}')"
                                                 class="font-medium text-blue-600 hover:underline">
                                                 Update Status
                                             </button>
@@ -271,7 +271,7 @@
     </div>
 
     <!-- Update Status Modal -->
-    <div id="updateStatusModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full bg-gray-900 bg-opacity-50 flex items-center justify-center">
+    <div id="updateStatusModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full bg-transparent backdrop-blur-xl flex items-center justify-center">
         <div class="relative w-full max-w-md max-h-full">
             <div class="relative bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 uppercase">
                 <button type="button" onclick="closeModal()" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center  ">
@@ -312,7 +312,12 @@
                         
                         <div id="check_in_container">
                             <label for="modal_check_in" class="block mb-2 text-sm font-medium text-gray-900 ">Waktu Masuk</label>
-                            <input type="time" name="check_in" id="modal_check_in" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            <input type="time" name="check_in" id="modal_check_in" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        </div>
+
+                        <div id="check_out_container">
+                            <label for="modal_check_out" class="block mb-2 text-sm font-medium text-gray-900 ">Waktu Pulang</label>
+                            <input type="time" name="check_out" id="modal_check_out" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         </div>
 
                         <div>
@@ -328,7 +333,7 @@
     </div>
 
     <script>
-        function openModal(teacherId, teacherName, attendanceCodeId, shiftId, checkIn, note) {
+        function openModal(teacherId, teacherName, attendanceCodeId, shiftId, checkIn, checkOut, note) {
             document.getElementById('modal_teacher_id').value = teacherId;
             document.getElementById('modal_teacher_name').value = teacherName;
             document.getElementById('modal_note').value = note;
@@ -354,6 +359,12 @@
                 const hours = String(now.getHours()).padStart(2, '0');
                 const minutes = String(now.getMinutes()).padStart(2, '0');
                 document.getElementById('modal_check_in').value = `${hours}:${minutes}`;
+            }
+
+            if (checkOut) {
+                document.getElementById('modal_check_out').value = checkOut.substring(0, 5);
+            } else {
+                document.getElementById('modal_check_out').value = '';
             }
 
             toggleInputs();
@@ -384,16 +395,22 @@
             const statusName = selectedOption.getAttribute('data-name');
             
             const checkInContainer = document.getElementById('check_in_container');
+            const checkOutContainer = document.getElementById('check_out_container');
             const checkInInput = document.getElementById('modal_check_in');
+            const checkOutInput = document.getElementById('modal_check_out');
             const noteInput = document.getElementById('modal_note');
 
             if (statusName === 'Hadir') {
                 checkInContainer.classList.remove('hidden');
+                checkOutContainer.classList.remove('hidden');
                 checkInInput.required = true;
+                checkOutInput.required = true;
                 noteInput.required = false;
             } else {
                 checkInContainer.classList.add('hidden');
+                checkOutContainer.classList.add('hidden');
                 checkInInput.required = false;
+                checkOutInput.required = false;
                 noteInput.required = true;
             }
         }
