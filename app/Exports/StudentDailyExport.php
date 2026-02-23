@@ -62,7 +62,7 @@ class StudentDailyExport implements FromCollection, WithHeadings, WithMapping, S
             $student->nis,
             $student->name,
             $student->classRoom->name ?? '-',
-            $attendance ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-',
+            ($attendance && $attendance->check_in) ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-',
             ($attendance && $attendance->check_out) ? \Carbon\Carbon::parse($attendance->check_out)->format('H:i') : '-',
             $statusText,
             $attendance->note ?? '-'
