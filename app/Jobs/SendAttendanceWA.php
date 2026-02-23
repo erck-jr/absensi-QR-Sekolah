@@ -36,11 +36,6 @@ class SendAttendanceWA implements ShouldQueue
      */
     public function handle(): void
     {
-        // 40. Pre-Condition: Only for Students
-        if ($this->type !== 'student') {
-            return;
-        }
-
         // 1. Check Gateway First (Avoid unnecessary sleep if inactive)
         $gateway = WaGateway::where('is_active', true)->first();
         if (!$gateway) {
@@ -64,7 +59,12 @@ class SendAttendanceWA implements ShouldQueue
         $messageContent = $template ? $template->content : "Absensi {$this->messageType} berhasil.";
 
         // 5. Replace Placeholders
-        $user = $this->attendance->student; // Guaranteed to be student by pre-check
+        $user = ($this->type === 'student') ? $this->attendance->student : $this->attendance->teacher;
+
+        if (!$user) {
+            $this->logToDb('failed', 'User record not found for ' . $this->type . ' ID: ' . ($this->attendance->student_id ?? $this->attendance->teacher_id));
+            return;
+        }
         
         $recipient = $user->phone;
 
