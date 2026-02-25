@@ -63,8 +63,8 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        // 4. Fixed Delay (2 seconds limit) to handle 1200+ scale without hitting 90min expiry
-        sleep(2);
+        // 4. Randomized Delay (2-5 seconds limit) to handle 1200+ scale safely while avoiding WA Ban patterns
+        sleep(rand(2, 5));
 
         // 5. Get Message Template Key
         $templateKey = $this->getTemplateKey();
@@ -96,6 +96,9 @@ class SendAttendanceWA implements ShouldQueue
             ],
             $messageContent
         );
+
+        // Parse Spintax {A|B|C}
+        $messageContent = self::parseSpintax($messageContent);
 
         // 6. Send to OneSender
         try {
@@ -174,5 +177,23 @@ class SendAttendanceWA implements ShouldQueue
             // We'll just let it fail silently or log to Laravel logs
             \Illuminate\Support\Facades\Log::warning("Cannot log WA to DB: No Gateway found.");
         }
+    }
+
+    /**
+     * Parse Spintax {Option1|Option2|Option3} recursively.
+     * @param string $text
+     * @return string
+     */
+    public static function parseSpintax($text)
+    {
+        return preg_replace_callback(
+            '/\{(((?>[^\{\}]+)|(?R))*)\}/x',
+            function ($text) {
+                $text = self::parseSpintax($text[1]);
+                $parts = explode('|', $text);
+                return $parts[array_rand($parts)];
+            },
+            $text
+        );
     }
 }

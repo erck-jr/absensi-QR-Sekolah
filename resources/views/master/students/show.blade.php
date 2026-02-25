@@ -43,16 +43,24 @@
                     @if($hasIdCard)
                         <div class="flex flex-col items-center mb-6">
                             <img src="{{ $idCardUrl }}?t={{ time() }}" alt="ID Card" class="max-w-md w-full shadow-lg rounded-lg mb-4">
-                            <a href="{{ $idCardUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2   focus:outline-none ">
-                                Unduh ID Card
-                            </a>
+                            <div class="flex flex-row space-x-2">
+                                <a href="{{ $idCardUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 focus:outline-none">
+                                    Unduh ID Card
+                                </a>
+                                <form action="{{ route('students.generate-card', $student->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 focus:outline-none">
+                                        Regenerate
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     @else
                         <div class="mb-6">
                             <p class="text-gray-500  mb-4">ID Card belum digenerate.</p>
                             <form action="{{ route('students.generate-card', $student->id) }}" method="POST">
                                 @csrf
-                                <button type="submit" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2   focus:outline-none ">
+                                <button type="submit" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 focus:outline-none">
                                     Generate ID Card
                                 </button>
                             </form>
