@@ -46,30 +46,36 @@
                                 <div class="flex flex-col items-center">
                                     <p class="mb-2 font-semibold text-gray-700 ">Depan</p>
                                     <img src="{{ $frontUrl }}?t={{ time() }}" alt="ID Card Front" class="max-w-xs w-full shadow-lg rounded-lg mb-4">
-                                    <a href="{{ $frontUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2   focus:outline-none ">
-                                        Unduh Depan
-                                    </a>
+                                    <div class="flex flex-row space-x-2">
+                                        <a href="{{ $frontUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 focus:outline-none">
+                                            Unduh
+                                        </a>
+                                        <form action="{{ route('teachers.generate-card', $teacher->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 focus:outline-none">
+                                                Regenerate
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             @endif
                             @if($hasBack)
                                 <div class="flex flex-col items-center">
                                     <p class="mb-2 font-semibold text-gray-700 ">Belakang</p>
                                     <img src="{{ $backUrl }}?t={{ time() }}" alt="ID Card Back" class="max-w-xs w-full shadow-lg rounded-lg mb-4">
-                                    <a href="{{ $backUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2   focus:outline-none ">
-                                        Unduh Belakang
-                                    </a>
+                                    <div class="flex flex-row space-x-2">
+                                        <a href="{{ $backUrl }}" download class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 focus:outline-none">
+                                            Unduh
+                                        </a>
+                                        <form action="{{ route('teachers.generate-card', $teacher->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 focus:outline-none">
+                                                Regenerate
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             @endif
-                        </div>
-                        
-                        <!-- Re-generate button in case they want to update -->
-                        <div class="mb-6">
-                             <form action="{{ route('teachers.generate-card', $teacher->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="text-white bg-yellow-600 hover:bg-yellow-700 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2   focus:outline-none ">
-                                    Regenerate ID Card
-                                </button>
-                            </form>
                         </div>
                     @else
                         <div class="mb-6">

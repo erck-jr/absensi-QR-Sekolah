@@ -50,18 +50,22 @@ class IdCardService
             $fontPath2 = public_path('fonts/Lato-Regular.ttf');
 
             // Name
-            $image->text(strtoupper($student->name), $width/2, $height - 185, function ($font) use ($fontPath) {
+            $fontSize = 24;
+            $maxWidth = $width - 100; // Total Lebar Canvas - Margin Kiri 50px - Margin Kanan 50px
+            $formattedName = $this->formatShortName($student->name, $maxWidth, $fontPath, $fontSize);
+
+            $image->text(strtoupper($formattedName), $width / 2, $height - 190, function ($font) use ($fontPath, $fontSize) {
                 $font->file($fontPath);
-                $font->size(30); // Adjusted size for better visibility
+                $font->size($fontSize); // Adjusted size for better visibility
                 $font->color('#000000');
                 $font->align('center');
                 $font->valign('bottom'); 
             });
 
             // NIS
-            $image->text("NIS: " . $student->nis, $width/2, $height - 110, function ($font) use ($fontPath2) {
+            $image->text("NIS: " . $student->nis, $width/2, $height - 115, function ($font) use ($fontPath2) {
                 $font->file($fontPath2);
-                $font->size(30);
+                $font->size(24);
                 $font->color('#000000');
                 $font->align('center');
                 $font->valign('bottom');
@@ -70,15 +74,42 @@ class IdCardService
             // 3. Add QR Code
             $qrContent = QrCode::format('png')->size(360)->generate($student->unique_code);
 
-             // Explicitly try GD native create first to identify issues
+            // Explicitly try GD native create first to identify issues
             $qrResource = @imagecreatefromstring($qrContent);
             if (!$qrResource) {
                  throw new \Exception('Native GD imagecreatefromstring failed to read QR content.');
             }
             
             $qrImage = $this->manager->read($qrResource);
-            
-            // Place QR Code at bottom-center with center padding based on template
+
+            // Terapkan Logo App dengan Background Putih Bulat
+            $logoPath = settings('app_logo') ? public_path(settings('app_logo')) : null;
+            if ($logoPath && file_exists($logoPath)) {
+                $logoSize = 80; // Ukuran logo di tengah (diperkecil agar ramah barcode reader)
+                $padding = 2; // Padding putih keliling logo
+                $circleDiameter = $logoSize + ($padding * 2);
+                
+                // Buat canvas putih transparan (kosong/alpha)
+                $whiteCircleCanvas = $this->manager->create($circleDiameter, $circleDiameter);
+                
+                // Gambar lingkaran putih murni/solid sebesar kanvas
+                $whiteCircleCanvas->drawCircle($circleDiameter / 2, $circleDiameter / 2, function ($circle) use ($circleDiameter) {
+                    $circle->radius(intval($circleDiameter / 2));
+                    $circle->background('ffffff'); // Warna latar di dalam radius
+                });
+                
+                // Baca logo asli, resize agar muat
+                $logoImg = $this->manager->read($logoPath);
+                $logoImg->resize($logoSize, $logoSize);
+                
+                // Taruh logo di center lingkaran putih
+                $whiteCircleCanvas->place($logoImg, 'center');
+                
+                // Taruh kotak putih (berisi logo) ke center QR Code
+                $qrImage->place($whiteCircleCanvas, 'center');
+            }
+
+            // Place customized QR Code at bottom-center with center padding based on template
             $image->place($qrImage, 'bottom-center', 0, ($height/3) - 70);
 
             // 5. Save
@@ -143,9 +174,13 @@ class IdCardService
 
             // 3. Add Text (Front)
             // Name
-            $imageFront->text(strtoupper($teacher->name), $width/2, $height - 185, function ($font) use ($fontPath) {
+            $fontSize = 24;
+            $maxWidth = $width - 100; // Total Lebar Canvas - Margin Kiri 50px - Margin Kanan 50px
+            $formattedName = $this->formatShortName($teacher->name, $maxWidth, $fontPath, $fontSize);
+
+            $imageFront->text(strtoupper($formattedName), $width / 2, $height - 180, function ($font) use ($fontPath, $fontSize) {
                 $font->file($fontPath);
-                $font->size(30);
+                $font->size($fontSize);
                 $font->color('#000000');
                 $font->align('center');
                 $font->valign('bottom');
@@ -195,6 +230,29 @@ class IdCardService
             }
             $qrImage = $this->manager->read($qrResource);
 
+            // Terapkan Logo App dengan Background Putih Bulat
+            $logoPath = settings('app_logo') ? public_path(settings('app_logo')) : null;
+            if ($logoPath && file_exists($logoPath)) {
+                $logoSize = 80; // Ukuran logo di tengah (diperkecil agar ramah barcode reader)
+                $padding = 2; // Padding putih keliling logo
+                $circleDiameter = $logoSize + ($padding * 2);
+                
+                // Buat canvas putih transparan (kosong/alpha)
+                $whiteCircleCanvas = $this->manager->create($circleDiameter, $circleDiameter);
+                
+                // Gambar lingkaran putih murni/solid sebesar kanvas
+                $whiteCircleCanvas->drawCircle($circleDiameter / 2, $circleDiameter / 2, function ($circle) use ($circleDiameter) {
+                    $circle->radius(intval($circleDiameter / 2));
+                    $circle->background('ffffff'); // Warna latar di dalam radius
+                });
+                
+                $logoImg = $this->manager->read($logoPath);
+                $logoImg->resize($logoSize, $logoSize);
+                
+                $whiteCircleCanvas->place($logoImg, 'center');
+                $qrImage->place($whiteCircleCanvas, 'center');
+            }
+
             // Place QR Code at Center
             $imageBack->place($qrImage, 'center');
 
@@ -218,5 +276,55 @@ class IdCardService
             Log::error('Failed to generate Teacher ID Card', ['error' => $e->getMessage()]);
             return ['success' => false, 'message' => 'Failed to generate image: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Helper to shorten name based on text width and container limit.
+     * 
+     * @param string $name
+     * @param int $widthLimit The max allowed width in pixels (e.g. Card Width - 100px)
+     * @param string $fontFilePath The true type font path
+     * @param int $fontSize The font size used
+     * @return string
+     */
+    private function formatShortName($name, $widthLimit, $fontFilePath, $fontSize)
+    {
+        $name = trim($name);
+        
+        // Cek lebar rentetan teks saat ini menggunakan imagettfbbox
+        // referensi array bounding box: 0=kiri-bawah(x), 4=kanan-atas(x)
+        $box = imagettfbbox($fontSize, 0, $fontFilePath, strtoupper($name));
+        $textWidth = abs($box[4] - $box[0]);
+
+        // Jika lebar teks masih aman di bawah limit margin (100px di luar), JANGAN dipotong.
+        if ($textWidth <= $widthLimit) {
+            return $name;
+        }
+
+        $words = explode(' ', $name);
+        $count = count($words);
+
+        // Abaikan pemotongan jika cuma 1 kata
+        if ($count <= 1) {
+            return $name;
+        }
+
+        if ($count == 2) {
+            // Singkat kata belakang: Ahmad Santoso -> Ahmad S.
+            $words[1] = mb_substr($words[1], 0, 1) . '.';
+            return implode(' ', $words);
+        }
+
+        // Jika >= 3 kata, singkat semua kata *tengah*
+        // Contoh: Ahmad Zain Nur Santoso -> Ahmad Z. N. Santoso
+        $firstWord = $words[0];
+        $lastWord = $words[$count - 1];
+        $middleInitials = [];
+
+        for ($i = 1; $i < $count - 1; $i++) {
+            $middleInitials[] = mb_substr($words[$i], 0, 1) . '.';
+        }
+
+        return $firstWord . ' ' . implode(' ', $middleInitials) . ' ' . $lastWord;
     }
 }

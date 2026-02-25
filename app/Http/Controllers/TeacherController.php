@@ -44,7 +44,15 @@ class TeacherController extends Controller
 
     public function show(Teacher $teacher)
     {
-        $qrcode = QrCode::size(200)->generate($teacher->unique_code);
+        $logoPath = settings('app_logo') ? public_path(settings('app_logo')) : null;
+        $qrCodeBuilder = QrCode::format('png')->size(200);
+
+        if ($logoPath && file_exists($logoPath)) {
+            $qrCodeBuilder->merge($logoPath, 0.2, true);
+        }
+
+        $qrcodeRaw = $qrCodeBuilder->generate($teacher->unique_code);
+        $qrcode = '<img src="data:image/png;base64,' . base64_encode($qrcodeRaw) . '" alt="QR Code">';
         
         $frontPath = 'id_cards/teacher_' . $teacher->id . '_front.png';
         $backPath = 'id_cards/teacher_' . $teacher->id . '_back.png';
