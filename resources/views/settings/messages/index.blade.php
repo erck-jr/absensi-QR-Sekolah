@@ -24,7 +24,7 @@
                             @method('PUT')
                             <div class="mb-4">
                                 <label class="block mb-2 text-xs font-medium text-gray-500 uppercase">Isi Pesan</label>
-                                <textarea name="content" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-teal-500 focus:border-teal-500" required>{{ $message->content }}</textarea>
+                                <textarea name="content" rows="8" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-teal-500 focus:border-teal-500" required>{{ $message->content }}</textarea>
                             </div>
                             <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-center text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:outline-none focus:ring-teal-300 shadow-sm">
                                 <span class="material-icons text-sm mr-2">save</span> Update Template
