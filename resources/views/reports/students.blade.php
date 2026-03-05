@@ -228,7 +228,7 @@
                                             </td>
                                             <td class="px-6 py-4 text-left">{{ $attendance->note ?? '-' }}</td>
                                             <td class="px-6 py-4 text-left">
-                                                @if(auth()->user()->role === 'admin')
+                                                @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                                 <button type="button" 
                                                     onclick="openModal('{{ $student->id }}', '{{ $student->name }}', '{{ $attendance ? $attendance->attendance_id : '' }}', '{{ $attendance ? $attendance->shift_id : '' }}', '{{ $attendance ? $attendance->check_in : '' }}', '{{ $attendance ? $attendance->check_out : '' }}', '{{ $attendance->note ?? '' }}')"
                                                     class="font-medium text-blue-600 hover:underline">

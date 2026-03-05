@@ -19,6 +19,6 @@ class EnsureUserIsAdmin
             return $next($request);
         }
 
-        abort(403, 'Unauthorized action.');
+        return back()->with('warning', 'Maaf, Anda Tidak Memiliki Akses untuk menu/fungsi tersebut');
     }
 }

@@ -209,7 +209,7 @@
                                         </td>
                                         <td class="px-6 py-4 text-left">{{ $attendance->note ?? '-' }}</td>
                                         <td class="px-6 py-4 text-left">
-                                            @if(auth()->user()->role === 'admin')
+                                            @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                             <button type="button" 
                                                 onclick="openModal('{{ $teacher->id }}', '{{ $teacher->name }}', '{{ $attendance ? $attendance->attendance_id : '' }}', '{{ $attendance ? $attendance->shift_id : '' }}', '{{ $attendance ? $attendance->check_in : '' }}', '{{ $attendance ? $attendance->check_out : '' }}', '{{ $attendance->note ?? '' }}')"
                                                 class="font-medium text-blue-600 hover:underline">
@@ -296,7 +296,9 @@
                             <label for="modal_attendance_code" class="block mb-2 text-sm font-medium text-gray-900 ">Status</label>
                             <select name="attendance_code_id" id="modal_attendance_code" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required onchange="toggleInputs()">
                                 @foreach($attendanceCodes ?? [] as $code)
-                                    <option value="{{ $code->id }}" data-name="{{ $code->name }}">{{ $code->name }}</option>
+                                    @if(auth()->user()->role === 'admin' || in_array($code->name, ['Izin', 'Sakit', 'Alpha']))
+                                        <option value="{{ $code->id }}" data-name="{{ $code->name }}">{{ $code->name }}</option>
+                                    @endif
                                 @endforeach
                             </select>
                         </div>
