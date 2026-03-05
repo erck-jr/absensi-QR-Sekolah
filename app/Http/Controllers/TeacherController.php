@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class TeacherController extends Controller
 {
@@ -45,14 +47,44 @@ class TeacherController extends Controller
     public function show(Teacher $teacher)
     {
         $logoPath = settings('app_logo') ? public_path(settings('app_logo')) : null;
-        $qrCodeBuilder = QrCode::format('png')->size(200);
+        $qrCodeRaw = QrCode::format('png')->size(360)->generate($teacher->unique_code);
+        $manager = new ImageManager(new Driver());
+
+        $qrResource = @imagecreatefromstring($qrCodeRaw);
+        if (!$qrResource) {
+            throw new \Exception('Native GD imagecreatefromstring failed to read QR content.');
+        }
+        
+        $qrImage = $manager->read($qrResource);
 
         if ($logoPath && file_exists($logoPath)) {
-            $qrCodeBuilder->merge($logoPath, 0.2, true);
+            $logoSize = 80; // Ukuran logo di tengah (diperkecil agar ramah barcode reader)
+            $padding = 2; // Padding putih keliling logo
+            $circleDiameter = $logoSize + ($padding * 2);
+            
+            // Buat canvas putih transparan (kosong/alpha)
+            $whiteCircleCanvas = $manager->create($circleDiameter, $circleDiameter);
+            
+            // Gambar lingkaran putih murni/solid sebesar kanvas
+            $whiteCircleCanvas->drawCircle($circleDiameter / 2, $circleDiameter / 2, function ($circle) use ($circleDiameter) {
+                $circle->radius(intval($circleDiameter / 2));
+                $circle->background('ffffff'); // Warna latar di dalam radius
+            });
+            
+            // Baca logo asli, resize agar muat
+            $logoImg = $manager->read($logoPath);
+            $logoImg->resize($logoSize, $logoSize);
+            
+            // Taruh logo di center lingkaran putih
+            $whiteCircleCanvas->place($logoImg, 'center');
+            
+            // Taruh kotak putih (berisi logo) ke center QR Code
+            $qrImage->place($whiteCircleCanvas, 'center');
         }
 
-        $qrcodeRaw = $qrCodeBuilder->generate($teacher->unique_code);
-        $qrcode = '<img src="data:image/png;base64,' . base64_encode($qrcodeRaw) . '" alt="QR Code">';
+        $base64Code = $qrImage->toPng()->toDataUri();
+
+        $qrcode = '<img src="'. $base64Code . '" alt="QR Code">';
         
         $frontPath = 'id_cards/teacher_' . $teacher->id . '_front.png';
         $backPath = 'id_cards/teacher_' . $teacher->id . '_back.png';
