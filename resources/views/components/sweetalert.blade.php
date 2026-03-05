@@ -33,6 +33,23 @@
     </script>
 @endif
 
+@if(session('warning'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: "{{ session('warning') }}",
+                showConfirmButton: true,
+                confirmButtonColor: '#f8bb86',
+                customClass: {
+                    popup: 'rounded-xl',
+                }
+            });
+        });
+    </script>
+@endif
+
 @if($errors->any())
     <script>
         document.addEventListener('DOMContentLoaded', function() {

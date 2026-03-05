@@ -59,9 +59,10 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::post('/laporan-guru/update', [ReportController::class, 'updateTeacherAttendance'])->name('reports.teachers.update');
+
     // Admin Only Routes
     Route::middleware('admin')->group(function () {
-        Route::post('/laporan-guru/update', [ReportController::class, 'updateTeacherAttendance'])->name('reports.teachers.update');
         
         Route::resource('settings', SettingController::class)->only(['index']);
         Route::post('settings/update', [SettingController::class, 'update'])->name('settings.update');

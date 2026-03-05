@@ -39,6 +39,9 @@ class ScannerController extends Controller
             $user = $student;
             $type = 'student';
         } elseif ($teacher = Teacher::where('unique_code', $request->unique_code)->first()) {
+            if (auth()->user()->role === 'operator') {
+                return response()->json(['status' => 'warning', 'message' => 'Maaf, Anda Tidak Memiliki Akses untuk menu/fungsi tersebut'], 403);
+            }
             $user = $teacher;
             $type = 'teacher';
         } else {

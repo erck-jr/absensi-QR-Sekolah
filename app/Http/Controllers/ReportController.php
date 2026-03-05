@@ -173,8 +173,8 @@ class ReportController extends Controller
 
         $attendanceCode = \App\Models\AttendanceCode::findOrFail($request->attendance_code_id);
 
-        if ($attendanceCode->name === 'Hadir' && auth()->user()->role !== 'admin') {
-            return back()->with('error', 'Hanya admin yang dapat mengubah status menjadi Hadir.');
+        if ($attendanceCode->name === 'Hadir' && !in_array(auth()->user()->role, ['admin', 'operator'])) {
+            return back()->with('warning', 'Maaf, Anda Tidak Memiliki Akses untuk menu/fungsi tersebut');
         }
 
         AttendanceStudent::updateOrCreate(
@@ -209,8 +209,14 @@ class ReportController extends Controller
 
         $attendanceCode = \App\Models\AttendanceCode::findOrFail($request->attendance_code_id);
 
+        if (auth()->user()->role === 'operator') {
+            if (!in_array($attendanceCode->name, ['Izin', 'Sakit', 'Alpha'])) {
+                return back()->with('warning', 'Maaf, Anda Tidak Memiliki Akses untuk menu/fungsi tersebut');
+            }
+        }
+
         if ($attendanceCode->name === 'Hadir' && auth()->user()->role !== 'admin') {
-            return back()->with('error', 'Hanya admin yang dapat mengubah status menjadi Hadir.');
+            return back()->with('warning', 'Maaf, Anda Tidak Memiliki Akses untuk menu/fungsi tersebut');
         }
 
         AttendanceTeacher::updateOrCreate(
