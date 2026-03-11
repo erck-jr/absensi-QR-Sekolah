@@ -43,46 +43,6 @@
                              @endif
                              <input type="file" id="app_logo" name="app_logo" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
                              <p class="mt-1 text-sm text-gray-500">SVG, PNG, JPG or GIF (MAX. 2MB).</p>
-                        </div>
-                    </div>
-
-                    <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Notifikasi WhatsApp (Gateway)</h3>
-                    <div class="grid gap-6 mb-6 md:grid-cols-2">
-                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                            <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
-                                <span class="material-icons text-sm mr-1">person</span> Notifikasi Siswa
-                            </h4>
-                            <div class="flex flex-col gap-3">
-                                <label class="inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="wa_notif_student_in" value="1" {{ ($settings['wa_notif_student_in'] ?? '0') == '1' ? 'checked' : '' }} class="sr-only peer">
-                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span class="ms-3 text-sm font-medium text-gray-900">Kirim WA Saat Siswa Masuk</span>
-                                </label>
-                                <label class="inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="wa_notif_student_out" value="1" {{ ($settings['wa_notif_student_out'] ?? '0') == '1' ? 'checked' : '' }} class="sr-only peer">
-                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    <span class="ms-3 text-sm font-medium text-gray-900">Kirim WA Saat Siswa Pulang</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="p-4 bg-green-50 rounded-lg border border-green-100">
-                            <h4 class="font-semibold text-green-800 mb-3 flex items-center">
-                                <span class="material-icons text-sm mr-1">school</span> Notifikasi Guru
-                            </h4>
-                            <div class="flex flex-col gap-3">
-                                <label class="inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="wa_notif_teacher_in" value="1" {{ ($settings['wa_notif_teacher_in'] ?? '0') == '1' ? 'checked' : '' }} class="sr-only peer">
-                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                                    <span class="ms-3 text-sm font-medium text-gray-900">Kirim WA Saat Guru Masuk</span>
-                                </label>
-                                <label class="inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="wa_notif_teacher_out" value="1" {{ ($settings['wa_notif_teacher_out'] ?? '0') == '1' ? 'checked' : '' }} class="sr-only peer">
-                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                                    <span class="ms-3 text-sm font-medium text-gray-900">Kirim WA Saat Guru Pulang</span>
-                                </label>
-                            </div>
-                        </div>
                     </div>
                     <div class="flex justify-end">
                         <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center flex items-center">

@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
 
 class WaGatewayController extends Controller
 {
     public function index()
     {
         $wagateways = \App\Models\WaGateway::latest()->get();
-        return view('master.wagateways.index', compact('wagateways'));
+        $settings = Setting::all()->pluck('value', 'key');
+        return view('master.wagateways.index', compact('wagateways', 'settings'));
     }
 
     public function create()
@@ -58,5 +61,32 @@ class WaGatewayController extends Controller
     {
         $wagateway->delete();
         return redirect()->route('wagateways.index')->with('success', 'WhatsApp Gateway berhasil dihapus');
+    }
+
+    public function updateSettings(Request $request)
+    {
+        // Only admin can update settings
+        if (auth()->user()->role !== 'admin') {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses untuk mengubah pengaturan.');
+        }
+
+        $waCheckboxes = [
+            'wa_notif_student_in',
+            'wa_notif_student_out',
+            'wa_notif_teacher_in',
+            'wa_notif_teacher_out'
+        ];
+
+        foreach ($waCheckboxes as $checkbox) {
+            Setting::updateOrCreate(
+                ['key' => $checkbox],
+                ['value' => $request->has($checkbox) ? '1' : '0']
+            );
+        }
+
+        // Clear cache
+        Cache::forget('app_settings');
+
+        return redirect()->route('wagateways.index')->with('success', 'Pengaturan Notifikasi WA berhasil disimpan');
     }
 }

@@ -13,6 +13,7 @@ class SettingController extends Controller
         return view('settings.index', compact('settings'));
     }
 
+
     public function update(Request $request)
     {
         // Only admin can update settings
@@ -29,18 +30,6 @@ class SettingController extends Controller
         ]);
 
         $data = $request->except('_token', '_method', 'app_logo');
-
-        // Handle checkboxes for WA Notifications
-        $waCheckboxes = [
-            'wa_notif_student_in',
-            'wa_notif_student_out',
-            'wa_notif_teacher_in',
-            'wa_notif_teacher_out'
-        ];
-
-        foreach ($waCheckboxes as $checkbox) {
-            $data[$checkbox] = $request->has($checkbox) ? '1' : '0';
-        }
 
         if ($request->hasFile('app_logo')) {
             $file = $request->file('app_logo');
