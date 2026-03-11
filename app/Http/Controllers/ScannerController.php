@@ -103,7 +103,9 @@ class ScannerController extends Controller
                     ]);
                 }
 
-                \App\Jobs\SendAttendanceWA::dispatch($attendance, $type, 'check_in', $isLate, false);
+                if (settings("wa_notif_{$type}_in", "0") == "1") {
+                    \App\Jobs\SendAttendanceWA::dispatch($attendance, $type, 'check_in', $isLate, false);
+                }
 
                 DB::commit();
                 
@@ -144,7 +146,9 @@ class ScannerController extends Controller
                 $isEarly = $now->lt($checkOutTime);
 
                 // Dispatch Job
-                \App\Jobs\SendAttendanceWA::dispatch($attendance, $type, 'check_out', false, $isEarly);
+                if (settings("wa_notif_{$type}_out", "0") == "1") {
+                    \App\Jobs\SendAttendanceWA::dispatch($attendance, $type, 'check_out', false, $isEarly);
+                }
 
                 DB::commit();
 

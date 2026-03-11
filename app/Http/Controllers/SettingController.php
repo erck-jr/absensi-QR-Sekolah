@@ -15,6 +15,11 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
+        // Only admin can update settings
+        if (auth()->user()->role !== 'admin') {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses untuk mengubah pengaturan.');
+        }
+
         $request->validate([
             'app_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'app_name' => 'nullable|string|max:255',
@@ -24,6 +29,18 @@ class SettingController extends Controller
         ]);
 
         $data = $request->except('_token', '_method', 'app_logo');
+
+        // Handle checkboxes for WA Notifications
+        $waCheckboxes = [
+            'wa_notif_student_in',
+            'wa_notif_student_out',
+            'wa_notif_teacher_in',
+            'wa_notif_teacher_out'
+        ];
+
+        foreach ($waCheckboxes as $checkbox) {
+            $data[$checkbox] = $request->has($checkbox) ? '1' : '0';
+        }
 
         if ($request->hasFile('app_logo')) {
             $file = $request->file('app_logo');

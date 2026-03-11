@@ -102,6 +102,33 @@ class SendAttendanceWA implements ShouldQueue
 
         // 6. Send to OneSender
         try {
+            // Throttling Logic: 50 notifications -> 15 mins pause
+            $throttleLimit = 50;
+            $pauseMinutes = 15;
+            
+            $countKey = 'wa_total_sent_count';
+            $throttleKey = 'wa_throttle_until';
+
+            // Check if we are currently throttled
+            $throttleUntil = \Illuminate\Support\Facades\Cache::get($throttleKey);
+            if ($throttleUntil && now()->lt($throttleUntil)) {
+                $seconds = now()->diffInSeconds($throttleUntil);
+                $this->release($seconds + 5); // Release back to queue
+                return;
+            }
+
+            $currentCount = \Illuminate\Support\Facades\Cache::get($countKey, 0);
+
+            if ($currentCount >= $throttleLimit) {
+                // Set throttle time
+                $until = now()->addMinutes($pauseMinutes);
+                \Illuminate\Support\Facades\Cache::put($throttleKey, $until, $until);
+                \Illuminate\Support\Facades\Cache::forget($countKey); // Reset count for next batch
+
+                $this->release($pauseMinutes * 60 + 5);
+                return;
+            }
+
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $gateway->api_token,
             ])->post($gateway->api_url, [
@@ -115,6 +142,8 @@ class SendAttendanceWA implements ShouldQueue
 
             if ($response->successful()) {
                 $this->logToDb('sent', 'Sent successfully via OneSender', $gateway->id, $recipient, $messageContent);
+                // Increment count
+                \Illuminate\Support\Facades\Cache::increment($countKey);
             } else {
                 $this->logToDb('failed', 'API Error: ' . $response->body(), $gateway->id, $recipient, $messageContent);
             }
