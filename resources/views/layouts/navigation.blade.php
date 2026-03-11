@@ -85,7 +85,7 @@
                             </x-slot>
                             <x-slot name="content">
                                 <x-dropdown-link :href="route('settings.index')">{{ __('Aplikasi') }}</x-dropdown-link>
-                                <x-dropdown-link :href="route('wagateways.index')">{{ __('Data WA Gateway') }}</x-dropdown-link>
+                                <x-dropdown-link :href="route('wagateways.index')">{{ __('Notifikasi WA') }}</x-dropdown-link>
                                 <x-dropdown-link :href="route('users.index')">{{ __('Manajemen User') }}</x-dropdown-link>
                                 <x-dropdown-link :href="route('message-templates.index')">{{ __('Template Pesan') }}</x-dropdown-link>
                                 <x-dropdown-link :href="route('card-templates.index')">{{ __('Template ID Card') }}</x-dropdown-link>
@@ -207,7 +207,7 @@
                 </button>
                 <div x-show="open" class="ps-4 space-y-1">
                     <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">{{ __('Aplikasi') }}</x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('wagateways.index')" :active="request()->routeIs('wagateways.*')">{{ __('Data WA Gateway') }}</x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('wagateways.index')" :active="request()->routeIs('wagateways.*')">{{ __('Notifikasi WA') }}</x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">{{ __('Manajemen User') }}</x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('message-templates.index')" :active="request()->routeIs('message-templates.*')">{{ __('Template Pesan') }}</x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('card-templates.index')" :active="request()->routeIs('card-templates.*')">{{ __('Template ID Card') }}</x-responsive-nav-link>

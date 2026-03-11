@@ -69,6 +69,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
         Route::resource('users', \App\Http\Controllers\UserController::class);
         Route::resource('message-templates', MessageTemplateController::class)->only(['index', 'update']);
         Route::resource('card-templates', CardTemplateController::class)->only(['index', 'update']);
+        Route::post('wagateways/settings', [\App\Http\Controllers\WaGatewayController::class, 'updateSettings'])->name('wagateways.settings.update');
         Route::resource('wagateways', \App\Http\Controllers\WaGatewayController::class);
         Route::get('walogs', [WaLogController::class, 'index'])->name('walogs.index');
 
