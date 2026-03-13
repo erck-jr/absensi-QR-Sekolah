@@ -116,11 +116,45 @@
                 <!-- Print Styles -->
                 <style>
                     @media print {
-                        .no-print { display: none !important; }
-                        body * { visibility: hidden; }
-                        #print-section, #print-section * { visibility: visible; }
-                        #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+                        @page {
+                            margin: 10mm;
+                            size: landscape;
+                        }
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                        }
+                        .no-print { 
+                            display: none !important; 
+                        }
+                        /* Hide everything by default */
+                        body > * {
+                            display: none !important;
+                        }
+                        /* Show only the main container and the print section */
+                        body > div.py-12,
+                        div.py-12 > div,
+                        #print-section,
+                        #print-section * {
+                            display: block !important;
+                            visibility: visible !important;
+                        }
+                        /* Reset common layout constraints for printing */
+                        .py-12 { padding-top: 0 !important; padding-bottom: 0 !important; }
+                        .max-w-7xl { max-width: none !important; width: 100% !important; }
+                        .sm\:px-6, .lg\:px-8 { padding-left: 0 !important; padding-right: 0 !important; }
+                        
+                        #print-section { 
+                            position: static !important; 
+                            width: 100% !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                        }
                         .overflow-x-auto { overflow: visible !important; }
+                        
+                        /* Fix for material card or other containers that might have shadows/margins */
+                        .bg-white { box-shadow: none !important; border: none !important; }
                     }
                 </style>
                 
@@ -218,7 +252,6 @@
                                             </td>
                                         </tr>
                                     @endforeach
-                                @endif
                             @else
                                 @if($reportData)
                                     @foreach($reportData['rows'] as $index => $row)
