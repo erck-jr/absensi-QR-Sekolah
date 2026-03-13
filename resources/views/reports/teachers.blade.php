@@ -105,45 +105,11 @@
                 <!-- Print Styles -->
                 <style>
                     @media print {
-                        @page {
-                            margin: 10mm;
-                            size: landscape;
-                        }
-                        body {
-                            margin: 0;
-                            padding: 0;
-                            background: white;
-                        }
-                        .no-print { 
-                            display: none !important; 
-                        }
-                        /* Hide everything by default */
-                        body > * {
-                            display: none !important;
-                        }
-                        /* Show only the main container and the print section */
-                        body > div.py-12,
-                        div.py-12 > div,
-                        #print-section,
-                        #print-section * {
-                            display: block !important;
-                            visibility: visible !important;
-                        }
-                        /* Reset common layout constraints for printing */
-                        .py-12 { padding-top: 0 !important; padding-bottom: 0 !important; }
-                        .max-w-7xl { max-width: none !important; width: 100% !important; }
-                        .sm\:px-6, .lg\:px-8 { padding-left: 0 !important; padding-right: 0 !important; }
-                        
-                        #print-section { 
-                            position: static !important; 
-                            width: 100% !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
-                        }
+                        .no-print { display: none !important; }
+                        body * { visibility: hidden; }
+                        #print-section, #print-section * { visibility: visible; }
+                        #print-section { position: absolute; left: 0; top: 0; width: 100%; }
                         .overflow-x-auto { overflow: visible !important; }
-                        
-                        /* Fix for material card or other containers that might have shadows/margins */
-                        .bg-white { box-shadow: none !important; border: none !important; }
                     }
                 </style>
 
@@ -174,18 +140,8 @@
                             @else
                              <tr>
                             <tr>
-                                <th colspan="{{ $daysInMonth + 6 }}" class="px-6 py-4 text-center text-lg font-bold border bg-gray-50 uppercase text-gray-900">
-                                    Laporan Kehadiran Guru
-                                </th>
-                            </tr>
-                            <tr>
-                                <th colspan="{{ $daysInMonth + 6 }}" class="px-6 py-2 text-center text-lg font-bold border bg-gray-50 uppercase text-gray-900">
-                                    {{ settings('school_name', 'Nama Sekolah Belum Diatur') }}
-                                </th>
-                            </tr>
-                            <tr>
-                                <th rowspan="2" scope="col" class="px-2 py-3 border sticky left-0 bg-gray-50 text-center font-bold align-middle">No</th>
-                                <th rowspan="2" scope="col" class="px-4 py-3 border text-left sticky left-10 bg-gray-50 align-middle font-bold min-w-[200px]">Nama Guru</th>
+                                <th rowspan="2" scope="col" class="px-2 py-3 border bg-gray-50 text-center font-bold align-middle">No</th>
+                                <th rowspan="2" scope="col" class="px-4 py-3 border text-left bg-gray-50 align-middle font-bold min-w-[200px]">Nama Guru</th>
                                 <th colspan="{{ $daysInMonth }}" scope="col" class="px-1 py-3 border bg-gray-50 text-center font-bold">
                                     Bulan {{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y') }}
                                 </th>
@@ -257,8 +213,8 @@
                                 @if($reportData)
                                     @foreach($reportData['rows'] as $index => $row)
                                         <tr class="bg-white border-b">
-                                            <td class="px-2 py-3 border sticky left-0 bg-white">{{ $loop->iteration }}</td>
-                                            <td class="px-4 py-3 border text-left sticky left-10 bg-white font-medium text-gray-900 whitespace-nowrap">{{ $row['name'] }}</td>
+                                            <td class="px-2 py-3 border bg-white">{{ $loop->iteration }}</td>
+                                            <td class="px-4 py-3 border text-left bg-white font-medium text-gray-900 whitespace-nowrap">{{ $row['name'] }}</td>
                                             
                                             @foreach($reportData['dates'] as $dateStr => $meta)
                                                 @if($meta['is_holiday'])
