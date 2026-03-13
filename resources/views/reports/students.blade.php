@@ -170,27 +170,7 @@
                         </thead>
                         <tbody>
                             @if($mode === 'daily')
-                                @if($isSunday || $holiday)
-                                    <tr>
-                                        <td colspan="8" class="px-6 py-10 text-center">
-                                            @if($isSunday)
-                                                <div class="flex flex-col items-center justify-center text-red-500">
-                                                    <span class="material-icons text-4xl mb-2">event_busy</span>
-                                                    <span class="text-xl font-semibold">Hari Minggu</span>
-                                                    <p class="text-gray-600">Laporan absensi tidak tersedia untuk hari Minggu.</p>
-                                                </div>
-                                            @elseif($holiday)
-                                                 <div class="flex flex-col items-center justify-center text-blue-500">
-                                                    <span class="material-icons text-4xl mb-2">beach_access</span>
-                                                    <span class="text-xl font-semibold">Hari Libur</span>
-                                                    <p class="text-gray-600 font-bold mb-1">{{ $holiday->info }}</p>
-                                                    <p class="text-gray-500 text-sm">Laporan absensi ditiadakan.</p>
-                                                </div>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @else
-                                    @foreach($students as $student)
+                                @foreach($students as $student)
                                         @php
                                             // ... existing daily logic (kept as is in replacement content) ...
                                             $attendance = $student->attendances->first();
