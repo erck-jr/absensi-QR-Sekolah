@@ -235,6 +235,14 @@
                                                             </div>
                                                         </td>
                                                     @endif
+                                                @elseif($meta['is_sunday'])
+                                                    @if($loop->parent->first)
+                                                        <td rowspan="{{ $reportData['attendee_count'] }}" class="px-1 py-1 border text-center text-xs bg-gray-100 text-gray-500 font-bold" style="vertical-align: middle;">
+                                                            <div style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; margin: 0 auto; min-height: 100px;">
+                                                                MINGGU
+                                                            </div>
+                                                        </td>
+                                                    @endif
                                                 @else
                                                      <td class="px-1 py-1 border text-center text-xs {{ $row['statuses'][$dateStr]['class'] }}">
                                                          {{ $row['statuses'][$dateStr]['code'] }}
@@ -243,8 +251,8 @@
                                             @endforeach
                                             
                                             <td class="px-2 py-3 border font-bold bg-green-50 text-green-900">{{ $row['summary']['H'] }}</td>
-                                            <td class="px-2 py-3 border font-bold bg-yellow-50 text-yellow-900">{{ $row['summary']['S'] }}</td>
                                             <td class="px-2 py-3 border font-bold bg-blue-50 text-blue-900">{{ $row['summary']['I'] }}</td>
+                                            <td class="px-2 py-3 border font-bold bg-yellow-50 text-yellow-900">{{ $row['summary']['S'] }}</td>
                                             <td class="px-2 py-3 border font-bold bg-red-50 text-red-900">{{ $row['summary']['A'] }}</td>
                                         </tr>
                                     @endforeach

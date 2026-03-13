@@ -46,6 +46,14 @@
                             </div>
                         </td>
                         @endif
+                    @elseif($meta['is_sunday'])
+                        @if($loop->parent->first)
+                        <td rowspan="{{ $reportData['attendee_count'] }}" style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f3f4f6; color: #6b7280; font-weight: bold; vertical-align: middle;">
+                            <div style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; margin: 0 auto;">
+                                MINGGU
+                            </div>
+                        </td>
+                        @endif
                     @else
                         @php
                             $code = $row['statuses'][$dateStr]['code'];
