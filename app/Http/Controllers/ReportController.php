@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceStudent;
 use App\Models\AttendanceTeacher;
 use App\Models\SchoolClass;
-use App\Models\Holiday; // Import Holiday
+use App\Models\Holiday;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -34,8 +34,7 @@ class ReportController extends Controller
             $selectedDate = Carbon::createFromDate($year, $month, 1);
             
             if ($selectedDate->startOfMonth()->gte($currentDate->startOfMonth())) {
-                 $reportData = null; // No Data
-                 $isFutureOrCurrent = true;
+                return redirect()->route('reports.students', ['mode' => 'daily'])->with('error', 'Laporan bulanan hanya tersedia untuk bulan yang telah selesai.');
             } else {
                  $isFutureOrCurrent = false;
                  
@@ -111,8 +110,7 @@ class ReportController extends Controller
             $selectedDate = Carbon::createFromDate($year, $month, 1);
 
             if ($selectedDate->startOfMonth()->gte($currentDate->startOfMonth())) {
-                 $reportData = null;
-                 $isFutureOrCurrent = true;
+                return redirect()->route('reports.teachers', ['mode' => 'daily'])->with('error', 'Laporan bulanan hanya tersedia untuk bulan yang telah selesai.');
             } else {
                  $isFutureOrCurrent = false;
                  $query = \App\Models\Teacher::with(['attendances' => function($q) use ($month, $year) {
@@ -152,8 +150,6 @@ class ReportController extends Controller
              }
         }
 
-
-
         $teachers = $query->orderBy('name')->get();
         
         return view('reports.teachers', compact('teachers', 'attendanceCodes', 'shifts', 'date', 'mode', 'isSunday', 'holiday'));
@@ -166,7 +162,7 @@ class ReportController extends Controller
             'date' => 'required|date',
             'attendance_code_id' => 'required|exists:attendance_codes,id',
             'shift_id' => 'required|exists:shifts,id',
-            'check_in' => 'required',
+            'check_in' => 'nullable',
             'check_out' => 'nullable',
             'note' => 'nullable|string'
         ]);
@@ -175,6 +171,14 @@ class ReportController extends Controller
 
         if ($attendanceCode->name === 'Hadir' && !in_array(auth()->user()->role, ['admin', 'operator'])) {
             return back()->with('warning', 'Maaf, Anda Tidak Memiliki Akses untuk menu/fungsi tersebut');
+        }
+        
+        $check_in = null;
+        $check_out = null;
+        
+        if($attendanceCode->name === 'Hadir'){
+            $check_in = $request->check_in;
+            $check_out = $request->check_out;
         }
 
         AttendanceStudent::updateOrCreate(
@@ -185,8 +189,8 @@ class ReportController extends Controller
             [
                 'attendance_id' => $request->attendance_code_id,
                 'shift_id' => $request->shift_id,
-                'check_in' => $request->check_in,
-                'check_out' => $request->check_out,
+                'check_in' => $check_in,
+                'check_out' => $check_out,
                 'is_late' => false,
                 'note' => $request->note
             ]
@@ -202,7 +206,7 @@ class ReportController extends Controller
             'date' => 'required|date',
             'attendance_code_id' => 'required|exists:attendance_codes,id',
             'shift_id' => 'required|exists:shifts,id',
-            'check_in' => 'required',
+            'check_in' => 'nullable',
             'check_out' => 'nullable',
             'note' => 'nullable|string'
         ]);
@@ -218,6 +222,14 @@ class ReportController extends Controller
         if ($attendanceCode->name === 'Hadir' && auth()->user()->role !== 'admin') {
             return back()->with('warning', 'Maaf, Anda Tidak Memiliki Akses untuk menu/fungsi tersebut');
         }
+        
+        $check_in = null;
+        $check_out = null;
+        
+        if($attendanceCode->name === 'Hadir'){
+            $check_in = $request->check_in;
+            $check_out = $request->check_out;
+        }
 
         AttendanceTeacher::updateOrCreate(
             [
@@ -227,8 +239,8 @@ class ReportController extends Controller
             [
                 'attendance_id' => $request->attendance_code_id,
                 'shift_id' => $request->shift_id,
-                'check_in' => $request->check_in,
-                'check_out' => $request->check_out,
+                'check_in' => $check_in,
+                'check_out' => $check_out,
                 'is_late' => false,
                 'note' => $request->note
             ]
@@ -240,6 +252,13 @@ class ReportController extends Controller
     {
         $month = $request->get('month', Carbon::now()->month);
         $year = $request->get('year', Carbon::now()->year);
+
+        $currentDate = Carbon::now();
+        $selectedDate = Carbon::createFromDate($year, $month, 1);
+
+        if ($selectedDate->startOfMonth()->gte($currentDate->startOfMonth())) {
+            return back()->with('error', 'Laporan bulanan hanya tersedia untuk bulan yang telah selesai.');
+        }
 
         $query = \App\Models\Student::with(['classRoom', 'attendances' => function($q) use ($month, $year) {
              $q->whereMonth('dates', $month)->whereYear('dates', $year)->with('attendanceCode');
@@ -259,6 +278,13 @@ class ReportController extends Controller
     {
         $month = $request->get('month', Carbon::now()->month);
         $year = $request->get('year', Carbon::now()->year);
+
+        $currentDate = Carbon::now();
+        $selectedDate = Carbon::createFromDate($year, $month, 1);
+
+        if ($selectedDate->startOfMonth()->gte($currentDate->startOfMonth())) {
+            return back()->with('error', 'Laporan bulanan hanya tersedia untuk bulan yang telah selesai.');
+        }
 
          $query = \App\Models\Teacher::with(['attendances' => function($q) use ($month, $year) {
              $q->whereMonth('dates', $month)->whereYear('dates', $year)->with('attendanceCode');

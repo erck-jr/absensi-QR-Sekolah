@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Laporan Kehadiran Siswa</x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -126,7 +126,7 @@
                 
                 <div class="relative overflow-x-auto" id="print-section">
                     <div class="p-4 text-center text-lg font-bold border-b bg-gray-50 uppercase text-gray-700">
-                        @if($mode === 'monthly' && !$isFutureOrCurrent)
+                        @if($mode === 'monthly')
                             Laporan Kehadiran Siswa - Bulan {{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y') }}
                         @elseif($mode === 'daily')
                             Laporan Kehadiran Harian Siswa - {{ \Carbon\Carbon::parse($date)->translatedFormat('d F Y') }}
@@ -240,13 +240,6 @@
                                     @endforeach
                                 @endif
                             @else
-                            @if($isFutureOrCurrent)
-                                <tr>
-                                    <td colspan="{{ 31 + 4 + 2 }}" class="px-6 py-4 text-center text-gray-500">
-                                        Laporan belum tersedia. Bulan ini sedang berjalan.
-                                    </td>
-                                </tr>
-                            @else
                                 @if($reportData)
                                     @foreach($reportData['rows'] as $index => $row)
                                         <tr class="bg-white border-b">
@@ -280,7 +273,6 @@
                                          <td colspan="100" class="text-center py-4">Tidak ada data.</td>
                                     </tr>
                                 @endif
-                            @endif
                             @endif
                         </tbody>
                     </table>
