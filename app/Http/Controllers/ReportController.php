@@ -64,8 +64,18 @@ class ReportController extends Controller
 
         // DAILY MODE
         $date = $request->get('start_date', Carbon::today()->toDateString());
-        $isSunday = Carbon::parse($date)->isSunday();
+        
+        $carbonDate = Carbon::parse($date);
+        $isSunday = $carbonDate->isSunday();
         $holiday = Holiday::whereDate('dates', $date)->first();
+
+        if ($isSunday) {
+            return redirect()->route('reports.students', ['mode' => 'daily'])->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        }
+
+        if ($holiday) {
+            return redirect()->route('reports.students', ['mode' => 'daily'])->with('error', 'Laporan tidak tersedia: ' . $holiday->info);
+        }
         
         // Query Students (Show ALL)
         $query = \App\Models\Student::with(['classRoom', 'attendances' => function($q) use ($date) {
@@ -129,8 +139,18 @@ class ReportController extends Controller
 
         // DAILY
         $date = $request->get('start_date', Carbon::today()->toDateString());
-        $isSunday = Carbon::parse($date)->isSunday();
+        
+        $carbonDate = Carbon::parse($date);
+        $isSunday = $carbonDate->isSunday();
         $holiday = Holiday::whereDate('dates', $date)->first();
+
+        if ($isSunday) {
+            return redirect()->route('reports.teachers', ['mode' => 'daily'])->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        }
+
+        if ($holiday) {
+            return redirect()->route('reports.teachers', ['mode' => 'daily'])->with('error', 'Laporan tidak tersedia: ' . $holiday->info);
+        }
 
         $query = \App\Models\Teacher::with(['attendances' => function($q) use ($date) {
             $q->whereDate('dates', $date)->with('attendanceCode', 'shift');
@@ -300,6 +320,16 @@ class ReportController extends Controller
     {
         $date = $request->get('start_date', Carbon::today()->toDateString());
         
+        $carbonDate = Carbon::parse($date);
+        if ($carbonDate->isSunday()) {
+            return back()->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        }
+
+        $holiday = Holiday::whereDate('dates', $date)->first();
+        if ($holiday) {
+            return back()->with('error', 'Laporan tidak tersedia: ' . $holiday->info);
+        }
+
         $query = \App\Models\Student::with(['classRoom', 'attendances' => function($q) use ($date) {
             $q->whereDate('dates', $date)->with('attendanceCode');
         }]);
@@ -332,6 +362,16 @@ class ReportController extends Controller
     public function exportTeacherDaily(Request $request)
     {
         $date = $request->get('start_date', Carbon::today()->toDateString());
+
+        $carbonDate = Carbon::parse($date);
+        if ($carbonDate->isSunday()) {
+            return back()->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        }
+
+        $holiday = Holiday::whereDate('dates', $date)->first();
+        if ($holiday) {
+            return back()->with('error', 'Laporan tidak tersedia: ' . $holiday->info);
+        }
 
         $query = \App\Models\Teacher::with(['attendances' => function($q) use ($date) {
             $q->whereDate('dates', $date)->with('attendanceCode');
