@@ -37,6 +37,11 @@
                                 <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
                             @endforeach
                         </select>
+
+                        <select name="status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full md:w-1/4 p-2.5">
+                            <option value="aktif" {{ request('status') != 'alumni' ? 'selected' : '' }}>Siswa Aktif</option>
+                            <option value="alumni" {{ request('status') == 'alumni' ? 'selected' : '' }}>Alumni (Lulus)</option>
+                        </select>
                         
                         <button type="submit" class="text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center">
                             <span class="material-icons text-sm mr-1">filter_list</span> Filter

@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Tambah Tingkat</x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -14,6 +14,11 @@
                     <div class="mb-6">
                         <label for="name" class="block mb-2 text-sm font-medium text-gray-900">Nama Tingkat</label>
                         <input type="text" id="name" name="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" required placeholder="Contoh: Level 10">
+                    </div>
+                    <div class="mb-6">
+                        <label for="level_order" class="block mb-2 text-sm font-medium text-gray-900">Urutan Tingkat (Hierarki)</label>
+                        <input type="number" id="level_order" name="level_order" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" required min="0" placeholder="Contoh: 10 (Gunakan angka untuk membedakan tingkatan kelas)">
+                        <p class="mt-1 text-xs text-gray-500">Angka ini digunakan untuk menentukan urutan kenaikan kelas (misal: tingkat dengan urutan 10 naik ke tingkat urutan 11).</p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button type="submit" class="text-white bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center flex items-center">

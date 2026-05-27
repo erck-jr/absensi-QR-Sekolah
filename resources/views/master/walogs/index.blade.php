@@ -8,8 +8,31 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
+            
+            @if(session('success'))
+                <div class="p-4 text-sm text-green-800 rounded-lg bg-green-50 border border-green-200" role="alert">
+                    <span class="font-medium">Sukses!</span> {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="p-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200" role="alert">
+                    <span class="font-medium">Error!</span> {{ session('error') }}
+                </div>
+            @endif
+
             <x-material-card title="Riwayat Pengiriman Pesan WA" icon="history" color="navy">
+                <x-slot name="actions">
+                    <div class="flex space-x-2">
+                        <a href="{{ route('walogs.export', request()->query()) }}" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-xs px-3 py-2 flex items-center shadow">
+                            <span class="material-icons text-sm mr-1">download</span> Export .txt
+                        </a>
+                        <button type="button" onclick="openClearModal()" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-xs px-3 py-2 flex items-center shadow">
+                            <span class="material-icons text-sm mr-1">delete_forever</span> Bersihkan Log
+                        </button>
+                    </div>
+                </x-slot>
                 <!-- Filters -->
                 <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <form action="{{ route('walogs.index') }}" method="GET" class="flex flex-wrap items-end gap-4">
@@ -210,5 +233,98 @@
             document.getElementById('logDetailModal').classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
         }
+
+        // Clear log modal functions
+        function openClearModal() {
+            document.getElementById('clear_confirm_text').value = '';
+            document.getElementById('clear_confirm_checkbox').checked = false;
+            
+            const btn = document.getElementById('clear-submit-btn');
+            btn.disabled = true;
+            btn.className = "text-white bg-gray-400 cursor-not-allowed font-medium rounded-lg text-sm px-5 py-2.5 text-center";
+
+            document.getElementById('clearLogModal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeClearModal() {
+            document.getElementById('clearLogModal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const clearConfirmCheckbox = document.getElementById('clear_confirm_checkbox');
+            const clearConfirmText = document.getElementById('clear_confirm_text');
+            const clearSubmitBtn = document.getElementById('clear-submit-btn');
+
+            function validateClearForm() {
+                if (clearConfirmCheckbox.checked && clearConfirmText.value.trim() === 'BERSIHKAN LOG') {
+                    clearSubmitBtn.disabled = false;
+                    clearSubmitBtn.className = "text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center cursor-pointer shadow";
+                } else {
+                    clearSubmitBtn.disabled = true;
+                    clearSubmitBtn.className = "text-white bg-gray-400 cursor-not-allowed font-medium rounded-lg text-sm px-5 py-2.5 text-center";
+                }
+            }
+
+            if (clearConfirmCheckbox && clearConfirmText) {
+                clearConfirmCheckbox.addEventListener('change', validateClearForm);
+                clearConfirmText.addEventListener('input', validateClearForm);
+            }
+        });
     </script>
+
+    <!-- Clear Log Modal -->
+    <div id="clearLogModal" tabindex="-1" aria-hidden="true" 
+        class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center">
+        <div class="relative w-full max-w-lg max-h-full">
+            <div class="relative bg-white rounded-xl shadow-2xl border overflow-hidden">
+                <form action="{{ route('walogs.clear') }}" method="POST">
+                    @csrf
+                    <!-- Header -->
+                    <div class="flex items-start justify-between p-4 border-b bg-red-50">
+                        <h3 class="text-lg font-bold text-red-900 flex items-center">
+                            <span class="material-icons mr-2 text-red-600">warning</span> 
+                            Peringatan Pembersihan Log WA
+                        </h3>
+                        <button type="button" onclick="closeClearModal()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    <!-- Body -->
+                    <div class="p-6 space-y-4">
+                        <div class="p-4 bg-red-50 text-red-800 border border-red-200 rounded-lg text-xs leading-relaxed">
+                            <p class="font-bold mb-1">PERINGATAN KERAS:</p>
+                            Seluruh riwayat log WhatsApp yang tersimpan akan **DIHAPUS PERMANEN** dari database. Anda sangat disarankan untuk melakukan **Export .txt** terlebih dahulu sebagai arsip cadangan.
+                        </div>
+
+                        <div class="flex items-start">
+                            <input type="checkbox" id="clear_confirm_checkbox" name="confirm_checkbox" required
+                                class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2 mt-0.5">
+                            <label for="clear_confirm_checkbox" class="ml-2 text-sm font-medium text-gray-700 cursor-pointer">
+                                Saya sudah mengekspor (backup) log WhatsApp sebelum melakukan penghapusan dan menyetujui penghapusan log ini.
+                            </label>
+                        </div>
+
+                        <div>
+                            <label for="clear_confirm_text" class="block mb-1 text-xs font-bold text-gray-700 uppercase">
+                                Ketik Kata Kunci Konfirmasi
+                            </label>
+                            <input type="text" id="clear_confirm_text" name="clear_confirm_text" required autocomplete="off"
+                                placeholder="Ketik: BERSIHKAN LOG"
+                                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block w-full p-2.5">
+                        </div>
+                    </div>
+                    <!-- Footer -->
+                    <div class="flex items-center p-4 border-t bg-gray-50 justify-end space-x-2">
+                        <button type="button" onclick="closeClearModal()" class="text-gray-700 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 font-medium rounded-lg text-sm px-5 py-2.5">Batal</button>
+                        <button type="submit" id="clear-submit-btn" disabled
+                            class="text-white bg-gray-400 cursor-not-allowed font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                            Eksekusi Bersihkan Log
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </x-app-layout>
