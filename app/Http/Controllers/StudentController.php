@@ -20,6 +20,10 @@ class StudentController extends Controller
 
         $query = Student::with('classRoom.level');
 
+        if ($request->get('status') === 'alumni') {
+            $query->onlyTrashed();
+        }
+
         if ($request->filled('level_id')) {
             $query->whereHas('classRoom', function ($q) use ($request) {
                 $q->where('level_id', $request->level_id);

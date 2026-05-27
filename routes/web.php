@@ -72,6 +72,16 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
         Route::post('wagateways/settings', [\App\Http\Controllers\WaGatewayController::class, 'updateSettings'])->name('wagateways.settings.update');
         Route::resource('wagateways', \App\Http\Controllers\WaGatewayController::class);
         Route::get('walogs', [WaLogController::class, 'index'])->name('walogs.index');
+        Route::get('walogs/export', [WaLogController::class, 'export'])->name('walogs.export');
+        Route::post('walogs/clear', [WaLogController::class, 'clear'])->name('walogs.clear');
+
+        // Tahun Ajaran Baru & Utilitas Database
+        Route::get('academic-year', [\App\Http\Controllers\AcademicYearController::class, 'index'])->name('academic.year.index');
+        Route::post('academic-year/promote', [\App\Http\Controllers\AcademicYearController::class, 'promote'])->name('academic.year.promote');
+        Route::post('academic-year/cleanup', [\App\Http\Controllers\AcademicYearController::class, 'cleanup'])->name('academic.year.cleanup');
+        Route::get('academic-year/download/{filename}', [\App\Http\Controllers\AcademicYearController::class, 'downloadBackup'])->name('academic.year.download');
+        Route::delete('academic-year/delete-backup/{filename}', [\App\Http\Controllers\AcademicYearController::class, 'deleteBackup'])->name('academic.year.delete-backup');
+        Route::post('academic-year/restore-guests/{filename}', [\App\Http\Controllers\AcademicYearController::class, 'restoreGuests'])->name('academic.year.restore-guests');
 
         // ID Card Generator
         Route::get('generator', [\App\Http\Controllers\CardGeneratorController::class, 'index'])->name('generator.index');

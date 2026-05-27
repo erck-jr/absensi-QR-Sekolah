@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Data Tingkat</x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -20,6 +20,7 @@
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
                                 <th scope="col" class="px-6 py-3">Nama Tingkat</th>
+                                <th scope="col" class="px-6 py-3">Urutan Tingkat</th>
                                 <th scope="col" class="px-6 py-3 text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -27,6 +28,7 @@
                             @foreach($levels as $level)
                             <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="px-6 py-4 font-medium text-gray-900">{{ $level->name }}</td>
+                                <td class="px-6 py-4 text-gray-500 font-mono">{{ $level->level_order }}</td>
                                 <td class="px-6 py-4 text-center">
                                     <div class="flex justify-center space-x-2">
                                         <a href="{{ route('levels.edit', $level->id) }}" class="text-orange-500 hover:text-orange-700" title="Edit">

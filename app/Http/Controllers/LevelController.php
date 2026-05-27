@@ -9,7 +9,7 @@ class LevelController extends Controller
 {
     public function index()
     {
-        $levels = Level::latest()->get();
+        $levels = Level::orderBy('level_order')->get();
         return view('master.levels.index', compact('levels'));
     }
 
@@ -20,7 +20,10 @@ class LevelController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required|unique:levels']);
+        $request->validate([
+            'name' => 'required|unique:levels',
+            'level_order' => 'required|integer|min:0'
+        ]);
         Level::create($request->all());
         return redirect()->route('levels.index')->with('success', 'Tingkat berhasil ditambahkan');
     }
@@ -32,7 +35,10 @@ class LevelController extends Controller
 
     public function update(Request $request, Level $level)
     {
-        $request->validate(['name' => 'required|unique:levels,name,' . $level->id]);
+        $request->validate([
+            'name' => 'required|unique:levels,name,' . $level->id,
+            'level_order' => 'required|integer|min:0'
+        ]);
         $level->update($request->all());
         return redirect()->route('levels.index')->with('success', 'Tingkat berhasil diperbarui');
     }
