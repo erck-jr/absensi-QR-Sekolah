@@ -65,6 +65,14 @@ class StudentDataSheet implements WithHeadings, WithEvents, WithTitle
                 $validationGender->setError('Silakan pilih L untuk Laki-laki atau P untuk Perempuan.');
                 $validationGender->setFormula1($genderOptions);
 
+                $sheet->getStyle('B2:B1500')
+                    ->getNumberFormat()
+                    ->setFormatCode(NumberFormat::FORMAT_TEXT);
+
+                $sheet->getStyle('E2:E1500')
+                    ->getNumberFormat()
+                    ->setFormatCode(NumberFormat::FORMAT_TEXT);
+                
                 // Styling
                 $sheet->getStyle('A1:E1')->getFont()->setBold(true);
                 $sheet->getColumnDimension('A')->setWidth(30);
