@@ -7,6 +7,7 @@ use App\Models\SchoolClass;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Maatwebsite\Excel\Concerns\WithSkipsEmptyRows;
 use Illuminate\Support\Str;
 
 class StudentImport implements ToModel, WithHeadingRow, WithValidation
@@ -23,6 +24,10 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
 
     public function model(array $row)
     {
+        if (empty(array_filter($row))) {
+            return null;
+        }
+
         $selectedClass = isset($row['kelas_pilih_dari_dropdown']) 
             ? trim($row['kelas_pilih_dari_dropdown']) 
             : null;
