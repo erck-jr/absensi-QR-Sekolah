@@ -15,22 +15,27 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
 
     public function __construct()
     {
-        // Cache classes for faster lookup
+        // Cache classes dengan key yang disebarkan/ditrim
         $this->classes = SchoolClass::with('level')->get()->mapWithKeys(function ($class) {
-            return [$class->level->name . ' - ' . $class->name => $class->id];
+            $key = trim($class->level->name . ' - ' . $class->name);
+            return [$key => $class->id];
         })->toArray();
     }
 
     public function model(array $row)
     {
-        $classId = $this->classes[$row['kelas_pilih_dari_dropdown']] ?? null;
+        $selectedClass = isset($row['kelas_pilih_dari_dropdown']) 
+            ? trim($row['kelas_pilih_dari_dropdown']) 
+            : null;
+
+        $classId = $this->classes[$selectedClass] ?? null;
 
         return new Student([
-            'name'        => $row['nama_lengkap'],
-            'nis'         => $row['nis'],
+            'name'        => trim($row['nama_lengkap']),
+            'nis'         => trim($row['nis']),
             'class_id'    => $classId,
-            'gender'      => strtoupper($row['jenis_kelamin_lp']),
-            'phone'       => $row['no_telepon'],
+            'gender'      => strtoupper(trim($row['jenis_kelamin_lp'])),
+            'phone'       => $row['no_telepon'] ?? null,
             'unique_code' => (string) Str::uuid(),
         ]);
     }
@@ -43,7 +48,8 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
             'kelas_pilih_dari_dropdown' => [
                 'required',
                 function ($attribute, $value, $fail) {
-                    if (!isset($this->classes[$value])) {
+                    $cleanedValue = trim($value);
+                    if (!isset($this->classes[$cleanedValue])) {
                         $fail('Kelas "' . $value . '" tidak ditemukan di database.');
                     }
                 },
@@ -56,11 +62,11 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
     public function customValidationMessages()
     {
         return [
-            'nama_lengkap.required' => 'Nama lengkap wajib diisi pada baris :attribute.',
-            'nis.required' => 'NIS wajib diisi pada baris :attribute.',
-            'nis.unique' => 'NIS :input sudah terdaftar di sistem (baris :attribute).',
-            'kelas_pilih_dari_dropdown.required' => 'Kelas wajib dipilih pada baris :attribute.',
-            'jenis_kelamin_lp.in' => 'Jenis kelamin harus L atau P (baris :attribute).',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'nis.required' => 'NIS wajib diisi.',
+            'nis.unique' => 'NIS :input sudah terdaftar di sistem.',
+            'kelas_pilih_dari_dropdown.required' => 'Kelas wajib dipilih dari dropdown.',
+            'jenis_kelamin_lp.in' => 'Jenis kelamin harus L atau P.',
         ];
     }
 }
