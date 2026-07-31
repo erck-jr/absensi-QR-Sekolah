@@ -46,7 +46,7 @@ class StudentDataSheet implements WithHeadings, WithEvents, WithTitle
                 $validationClass = $sheet->getDataValidation('C2:C1000');
                 $validationClass->setType(DataValidation::TYPE_LIST);
                 $validationClass->setErrorStyle(DataValidation::STYLE_STOP);
-                $validationClass->setAllowBlank(false);
+                $validationClass->setAllowBlank(true);
                 $validationClass->setShowInputMessage(true);
                 $validationClass->setShowErrorMessage(true);
                 $validationClass->setShowDropDown(true);
@@ -58,7 +58,7 @@ class StudentDataSheet implements WithHeadings, WithEvents, WithTitle
                 $validationGender = $sheet->getDataValidation('D2:D1000');
                 $validationGender->setType(DataValidation::TYPE_LIST);
                 $validationGender->setErrorStyle(DataValidation::STYLE_STOP);
-                $validationGender->setAllowBlank(false);
+                $validationGender->setAllowBlank(true);
                 $validationGender->setShowInputMessage(true);
                 $validationGender->setShowErrorMessage(true);
                 $validationGender->setShowDropDown(true);
