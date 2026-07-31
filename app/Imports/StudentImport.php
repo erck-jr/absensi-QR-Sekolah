@@ -7,7 +7,6 @@ use App\Models\SchoolClass;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Concerns\WithSkipsEmptyRows;
 use Illuminate\Support\Str;
 
 class StudentImport implements ToModel, WithHeadingRow, WithValidation
@@ -17,19 +16,23 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
     public function __construct()
     {
         $this->classes = SchoolClass::with('level')->get()->mapWithKeys(function ($class) {
-            $key = trim($class->level->name . ' - ' . $class->name);
+            // Normalisasi konsisten: trim setiap komponen SEBELUM digabung,
+            // sama seperti yang dilakukan ReferenceSheet saat mengisi dropdown.
+            $key = trim($class->level->name) . ' - ' . trim($class->name);
             return [$key => $class->id];
         })->toArray();
     }
 
     public function model(array $row)
     {
-        if (empty(array_filter($row))) {
+        // 1. Abaikan/Skip jika semua kolom utama bernilai kosong
+        if (empty($row['nama_lengkap']) && empty($row['nis'])) {
             return null;
         }
 
-        $selectedClass = isset($row['kelas_pilih_dari_dropdown']) 
-            ? trim($row['kelas_pilih_dari_dropdown']) 
+        // Key 'kelas' sesuai slug dari header 'Kelas' di template.
+        $selectedClass = isset($row['kelas']) 
+            ? trim($row['kelas']) 
             : null;
 
         $classId = $this->classes[$selectedClass] ?? null;
@@ -37,11 +40,12 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
         // Normalisasi Nomor Telepon untuk WA
         $phone = $this->formatPhoneNumber($row['no_telepon'] ?? null);
 
+        // Key 'jenis_kelamin' sesuai slug dari header 'Jenis Kelamin' di template.
         return new Student([
             'name'        => trim($row['nama_lengkap']),
             'nis'         => trim($row['nis']),
             'class_id'    => $classId,
-            'gender'      => strtoupper(trim($row['jenis_kelamin_lp'])),
+            'gender'      => strtoupper(trim($row['jenis_kelamin'])),
             'phone'       => $phone,
             'unique_code' => (string) Str::uuid(),
         ]);
@@ -52,7 +56,8 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
         return [
             'nama_lengkap' => 'required|string|max:255',
             'nis' => 'required|numeric|unique:students,nis',
-            'kelas_pilih_dari_dropdown' => [
+            // Key 'kelas' sesuai slug dari header 'Kelas' di template
+            'kelas' => [
                 'required',
                 function ($attribute, $value, $fail) {
                     $cleanedValue = trim($value);
@@ -61,9 +66,10 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
                     }
                 },
             ],
-            'jenis_kelamin_lp' => 'required|in:L,P,l,p',
+            // Key 'jenis_kelamin' sesuai slug dari header 'Jenis Kelamin' di template
+            'jenis_kelamin' => 'required|in:L,P,l,p',
             
-            // UBAH VALIDASI: Gunakan regex agar menerima string angka & strip/spasi
+            // Validasi no_telepon: regex memastikan format, min/max sebagai panjang string
             'no_telepon' => ['nullable', 'regex:/^[0-9\+\-\s]+$/', 'min:9', 'max:15'],
         ];
     }
@@ -74,8 +80,8 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation
             'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
             'nis.required' => 'NIS wajib diisi.',
             'nis.unique' => 'NIS :input sudah terdaftar di sistem.',
-            'kelas_pilih_dari_dropdown.required' => 'Kelas wajib dipilih dari dropdown.',
-            'jenis_kelamin_lp.in' => 'Jenis kelamin harus L atau P.',
+            'kelas.required' => 'Kelas wajib dipilih dari dropdown.',
+            'jenis_kelamin.in' => 'Jenis kelamin harus L atau P.',
             'no_telepon.regex' => 'Format no telepon tidak valid (harus berupa angka).',
             'no_telepon.min' => 'No telepon minimal 9 digit.',
             'no_telepon.max' => 'No telepon maksimal 15 digit.',
