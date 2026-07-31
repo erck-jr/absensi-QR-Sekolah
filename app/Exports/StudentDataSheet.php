@@ -19,12 +19,20 @@ class StudentDataSheet implements WithHeadings, WithEvents, WithTitle
 
     public function headings(): array
     {
+        // PENTING: Nama header ini harus menghasilkan slug yang PERSIS sama
+        // dengan key yang dipakai di StudentImport.php saat WithHeadingRow aktif.
+        // Aturan slug: huruf kecil, spasi/tanda baca non-alfanumerik -> underscore.
+        // 'Nama Lengkap'           -> nama_lengkap
+        // 'NIS'                    -> nis
+        // 'Kelas'                  -> kelas
+        // 'Jenis Kelamin (L atau P)' -> jenis_kelamin_l_atau_p  <- TIDAK COCOK
+        // Gunakan header yang menghasilkan slug simpel & pasti:
         return [
-            'Nama Lengkap',
-            'NIS',
-            'Kelas (Pilih dari Dropdown)',
-            'Jenis Kelamin (L/P)',
-            'No Telepon',
+            'Nama Lengkap',        // -> nama_lengkap
+            'NIS',                 // -> nis
+            'Kelas',               // -> kelas
+            'Jenis Kelamin',       // -> jenis_kelamin
+            'No Telepon',          // -> no_telepon
         ];
     }
 
@@ -49,7 +57,7 @@ class StudentDataSheet implements WithHeadings, WithEvents, WithTitle
                 $validationClass->setAllowBlank(true);
                 $validationClass->setShowInputMessage(true);
                 $validationClass->setShowErrorMessage(true);
-                $validationClass->setShowDropDown(true);
+                $validationClass->setShowDropDown(false);
                 $validationClass->setErrorTitle('Input Error');
                 $validationClass->setError('Silakan pilih kelas yang tersedia dari daftar.');
                 $validationClass->setFormula1($classFormula);
@@ -61,7 +69,7 @@ class StudentDataSheet implements WithHeadings, WithEvents, WithTitle
                 $validationGender->setAllowBlank(true);
                 $validationGender->setShowInputMessage(true);
                 $validationGender->setShowErrorMessage(true);
-                $validationGender->setShowDropDown(true);
+                $validationGender->setShowDropDown(false);
                 $validationGender->setErrorTitle('Input Error');
                 $validationGender->setError('Silakan pilih L untuk Laki-laki atau P untuk Perempuan.');
                 $validationGender->setFormula1($genderOptions);

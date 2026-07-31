@@ -22,8 +22,10 @@ class ReferenceSheet implements FromCollection, WithHeadings, WithTitle
     public function collection()
     {
         return SchoolClass::with('level')->get()->map(function ($class) {
+            // Normalisasi per-komponen (sama dengan StudentImport) agar nilai
+            // dropdown di kolom C persis cocok dengan key di map lookup import.
             return [
-                'class_name' => $class->level->name . ' - ' . $class->name,
+                'class_name' => trim($class->level->name) . ' - ' . trim($class->name),
             ];
         });
     }
