@@ -19,14 +19,7 @@ class StudentDataSheet implements WithHeadings, WithEvents, WithTitle
 
     public function headings(): array
     {
-        // PENTING: Nama header ini harus menghasilkan slug yang PERSIS sama
-        // dengan key yang dipakai di StudentImport.php saat WithHeadingRow aktif.
-        // Aturan slug: huruf kecil, spasi/tanda baca non-alfanumerik -> underscore.
-        // 'Nama Lengkap'           -> nama_lengkap
-        // 'NIS'                    -> nis
-        // 'Kelas'                  -> kelas
-        // 'Jenis Kelamin (L atau P)' -> jenis_kelamin_l_atau_p  <- TIDAK COCOK
-        // Gunakan header yang menghasilkan slug simpel & pasti:
+        
         return [
             'Nama Lengkap',        // -> nama_lengkap
             'NIS',                 // -> nis

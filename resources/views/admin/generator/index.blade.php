@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Generate ID Card</x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -8,7 +8,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            
+
             <!-- Student Generator -->
             <x-material-card title="Generate Kartu Siswa" icon="badge" color="indigo">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -53,19 +53,20 @@
     <script>
         async function startStudentGeneration() {
             const classId = document.getElementById('class_id').value;
-            
+
             // 1. Get IDs
             Swal.fire({ title: 'Mengambil data siswa...', didOpen: () => Swal.showLoading() });
-            
+
             try {
                 const response = await fetch(`{{ route('generator.get-students') }}?class_id=${classId}`);
                 const ids = await response.json();
-                
+
                 if (ids.length === 0) {
                     Swal.fire('Info', 'Tidak ada data siswa ditemukan.', 'info');
                     return;
                 }
 
+                // Gunakan endpoint massal (cached mode)
                 processQueue(ids, 'student');
 
             } catch (error) {
@@ -74,18 +75,18 @@
         }
 
         async function startTeacherGeneration() {
-             // 1. Get IDs
             Swal.fire({ title: 'Mengambil data guru...', didOpen: () => Swal.showLoading() });
-            
+
             try {
                 const response = await fetch(`{{ route('generator.get-teachers') }}`);
                 const ids = await response.json();
-                
+
                 if (ids.length === 0) {
                     Swal.fire('Info', 'Tidak ada data guru ditemukan.', 'info');
                     return;
                 }
 
+                // Gunakan endpoint massal (cached mode)
                 processQueue(ids, 'teacher');
 
             } catch (error) {
@@ -95,20 +96,26 @@
 
         async function processQueue(ids, type) {
             let processed = 0;
+            let cachedCount = 0;
             const total = ids.length;
-            const url = type === 'student' ? `{{ route('generator.student') }}` : `{{ route('generator.teacher') }}`;
+
+            // Arahkan ke endpoint massal (cached) bukan single overwrite
+            const url = type === 'student'
+                ? `{{ route('generator.mass-student') }}`
+                : `{{ route('generator.mass-teacher') }}`;
+
             const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
             Swal.fire({
                 title: `Generating ${type === 'student' ? 'Siswa' : 'Guru'} ID Cards`,
-                html: `Progress: <b>0</b>/${total}`,
+                html: `Progress: <b>0</b>/${total} &nbsp;|&nbsp; Cached: <b>0</b>`,
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
             });
 
             for (const id of ids) {
                 try {
-                    await fetch(url, {
+                    const res = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -116,16 +123,29 @@
                         },
                         body: JSON.stringify({ id: id })
                     });
-                    
+
+                    const data = await res.json();
+
                     processed++;
-                    Swal.update({ html: `Progress: <b>${processed}</b>/${total}` });
+                    if (data.cached) cachedCount++;
+
+                    Swal.update({
+                        html: `Progress: <b>${processed}</b>/${total} &nbsp;|&nbsp; Cached (dilewati): <b>${cachedCount}</b>`
+                    });
 
                 } catch (error) {
                     console.error('Generation failed for ID:', id);
+                    processed++;
                 }
             }
 
-            Swal.fire('Selesai!', `Berhasil generate ${processed} kartu dari ${total} data.`, 'success');
+            const generated = processed - cachedCount;
+            Swal.fire(
+                'Selesai!',
+                `Generate selesai dari ${total} data.<br>
+                 <b>${generated}</b> digenerate baru &nbsp;|&nbsp; <b>${cachedCount}</b> diambil dari cache.`,
+                'success'
+            );
         }
 
         function downloadZip(type) {
@@ -136,4 +156,3 @@
     </script>
     @endpush
 </x-app-layout>
-

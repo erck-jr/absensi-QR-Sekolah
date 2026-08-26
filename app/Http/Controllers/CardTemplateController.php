@@ -33,7 +33,7 @@ class CardTemplateController extends Controller
             // Move to public/templates_card
             $file->move(public_path('templates_card'), $filename);
 
-            $cardTemplate->update(['file_name' => $filename]);
+            $cardTemplate->update(['file_name' => $filename, 'cached_idcard' => null]);
         }
 
         return redirect()->route('card-templates.index')->with('success', 'Template berhasil diupload');

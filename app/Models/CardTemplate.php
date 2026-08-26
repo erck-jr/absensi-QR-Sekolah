@@ -6,5 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class CardTemplate extends Model
 {
-    protected $fillable = ['key', 'file_name'];
+    protected $fillable = ['key', 'file_name', 'cached_idcard'];
+
+    protected $casts = [
+        'cached_idcard' => 'array',
+    ];
 }
