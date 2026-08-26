@@ -89,6 +89,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
         Route::get('generator/get-teachers', [\App\Http\Controllers\CardGeneratorController::class, 'getTeachers'])->name('generator.get-teachers');
         Route::post('generator/student', [\App\Http\Controllers\CardGeneratorController::class, 'generateStudent'])->name('generator.student');
         Route::post('generator/teacher', [\App\Http\Controllers\CardGeneratorController::class, 'generateTeacher'])->name('generator.teacher');
+        Route::post('generator/mass-student', [\App\Http\Controllers\CardGeneratorController::class, 'massGenerateStudent'])->name('generator.mass-student');
+        Route::post('generator/mass-teacher', [\App\Http\Controllers\CardGeneratorController::class, 'massGenerateTeacher'])->name('generator.mass-teacher');
         Route::get('generator/download-zip', [\App\Http\Controllers\CardGeneratorController::class, 'downloadZip'])->name('generator.download-zip');
     });
 
