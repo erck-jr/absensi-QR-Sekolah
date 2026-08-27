@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Teacher;
+use App\Models\CardTemplate;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Intervention\Image\ImageManager;
@@ -86,24 +87,36 @@ class TeacherController extends Controller
 
         $qrcode = '<img src="'. $base64Code . '" alt="QR Code">';
         
-        $frontPath = 'id_cards/teacher_' . $teacher->id . '_front.png';
-        $backPath = 'id_cards/teacher_' . $teacher->id . '_back.png';
-        
+        // Path sesuai format baru: id_cards/teachers/{name}_{nuptk}_front.png
+        $baseName  = $this->sanitizeFileName($teacher->name) . '_' . $teacher->nuptk;
+        $frontPath = 'id_cards/teachers/' . $baseName . '_front.png';
+        $backPath  = 'id_cards/teachers/' . $baseName . '_back.png';
+
         $hasFront = \Illuminate\Support\Facades\Storage::disk('public')->exists($frontPath);
-        $hasBack = \Illuminate\Support\Facades\Storage::disk('public')->exists($backPath);
-        
+        $hasBack  = \Illuminate\Support\Facades\Storage::disk('public')->exists($backPath);
+
         $frontUrl = $hasFront ? asset('storage/' . $frontPath) : null;
-        $backUrl = $hasBack ? asset('storage/' . $backPath) : null;
+        $backUrl  = $hasBack  ? asset('storage/' . $backPath)  : null;
 
         return view('master.teachers.show', compact('teacher', 'qrcode', 'hasFront', 'hasBack', 'frontUrl', 'backUrl'));
     }
 
     public function generateCard(Teacher $teacher)
     {
+        // Single generate dari profil = selalu overwrite
         $service = new \App\Services\IdCardService();
-        $result = $service->generateTeacherCard($teacher);
+        $result  = $service->generateTeacherCard($teacher, true);
 
         if ($result['success']) {
+            // Sinkronisasi cache setelah overwrite
+            $template  = \App\Models\CardTemplate::where('key', 'teacher_front')->first();
+            if ($template) {
+                $cachedIds = $template->cached_idcard ?? [];
+                if (!in_array($teacher->id, $cachedIds)) {
+                    $cachedIds[] = $teacher->id;
+                    $template->update(['cached_idcard' => $cachedIds]);
+                }
+            }
             return redirect()->route('teachers.show', $teacher->id)->with('success', 'ID Card berhasil digenerate');
         } else {
             return redirect()->route('teachers.show', $teacher->id)->with('error', 'Gagal generate ID Card: ' . $result['message']);
@@ -150,5 +163,15 @@ class TeacherController extends Controller
 
         $teacher->delete();
         return redirect()->route('teachers.index')->with('success', 'Guru berhasil dihapus');
+    }
+    /**
+     * Sanitasi string untuk digunakan sebagai nama file/folder.
+     * Harus konsisten dengan method yang sama di IdCardService.
+     */
+    private function sanitizeFileName(string $string): string
+    {
+        $string = preg_replace('/[^A-Za-z0-9\s_\-]/', '', $string);
+        $string = preg_replace('/\s+/', '_', trim($string));
+        return $string;
     }
 }

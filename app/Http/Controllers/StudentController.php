@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\CardTemplate;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Intervention\Image\ImageManager;
@@ -116,19 +117,32 @@ class StudentController extends Controller
 
         $qrcode = '<img src="'. $base64Code . '" alt="QR Code">';
         
-        $idCardPath = 'id_cards/student_' . $student->id . '.png';
-        $hasIdCard = \Illuminate\Support\Facades\Storage::disk('public')->exists($idCardPath);
-        $idCardUrl = $hasIdCard ? asset('storage/' . $idCardPath) : null;
+        // Path sesuai format baru: id_cards/students/{class_name}/{name}_{nis}.png
+        $className   = $this->sanitizeFileName($student->classRoom->name ?? 'tanpa_kelas');
+        $baseName    = $this->sanitizeFileName($student->name) . '_' . $student->nis;
+        $idCardPath  = 'id_cards/students/' . $className . '/' . $baseName . '.png';
+        $hasIdCard   = \Illuminate\Support\Facades\Storage::disk('public')->exists($idCardPath);
+        $idCardUrl   = $hasIdCard ? asset('storage/' . $idCardPath) : null;
 
         return view('master.students.show', compact('student', 'qrcode', 'hasIdCard', 'idCardUrl'));
     }
 
     public function generateCard(Student $student)
     {
+        // Single generate dari profil = selalu overwrite
         $service = new \App\Services\IdCardService();
-        $result = $service->generateStudentCard($student);
+        $result  = $service->generateStudentCard($student, true);
 
         if ($result['success']) {
+            // Sinkronisasi cache setelah overwrite
+            $template  = \App\Models\CardTemplate::where('key', 'student_front')->first();
+            if ($template) {
+                $cachedIds = $template->cached_idcard ?? [];
+                if (!in_array($student->id, $cachedIds)) {
+                    $cachedIds[] = $student->id;
+                    $template->update(['cached_idcard' => $cachedIds]);
+                }
+            }
             return redirect()->route('students.show', $student->id)->with('success', 'ID Card berhasil digenerate');
         } else {
             return redirect()->route('students.show', $student->id)->with('error', 'Gagal generate ID Card: ' . $result['message']);
@@ -212,5 +226,15 @@ class StudentController extends Controller
         
         $student->delete();
         return redirect()->route('students.index')->with('success', 'Siswa berhasil dihapus');
+    }
+    /**
+     * Sanitasi string untuk digunakan sebagai nama file/folder.
+     * Harus konsisten dengan method yang sama di IdCardService.
+     */
+    private function sanitizeFileName(string $string): string
+    {
+        $string = preg_replace('/[^A-Za-z0-9\s_\-]/', '', $string);
+        $string = preg_replace('/\s+/', '_', trim($string));
+        return $string;
     }
 }
