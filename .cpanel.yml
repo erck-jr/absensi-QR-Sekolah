@@ -2,7 +2,7 @@
 deployment:
   tasks:
     - export DEPLOYPATH1=/home/cbtsmpam/absensi/
-    - export DEPLOYPATH2=/home/cbtsmpam/smkskesehatanambon.web.id
+    - export DEPLOYPATH2=/home/cbtsmpam/smkskesehatanambon.web.id/
     
     # Deploy to first path (absensi)
     - /bin/cp -R app $DEPLOYPATH1
