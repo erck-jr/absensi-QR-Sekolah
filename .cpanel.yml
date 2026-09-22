@@ -1,24 +1,49 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/cbtsmpam/absensi/
-    - /bin/cp -R app $DEPLOYPATH
-    - /bin/cp -R bootstrap $DEPLOYPATH
-    - /bin/cp -R resources $DEPLOYPATH
-    - /bin/cp -R routes $DEPLOYPATH
-    - /bin/cp artisan $DEPLOYPATH
-    - /bin/cp composer.json $DEPLOYPATH
-    - /bin/cp composer.lock $DEPLOYPATH
-    - /bin/cp package.json $DEPLOYPATH
-    - /bin/cp vite.config.js $DEPLOYPATH
+    - export DEPLOYPATH1=/home/cbtsmpam/absensi/
+    - export DEPLOYPATH2=/home/cbtsmpam/smkskesehatanambon.web.id
     
-    # Public Folder Handling (Exclude excess files)
-    - /bin/mkdir -p $DEPLOYPATH/public
-    - /bin/cp -R public/build $DEPLOYPATH/public/
-    - /bin/cp public/index.php $DEPLOYPATH/public/
-    - /bin/cp public/.htaccess $DEPLOYPATH/public/
-    - /bin/cp public/favicon.ico $DEPLOYPATH/public/
-    - /bin/cp public/robots.txt $DEPLOYPATH/public/
-    - /bin/cp -R public/assets $DEPLOYPATH/public/
-    - /bin/cp -R public/fonts $DEPLOYPATH/public/
-    - /bin/cp -R public/templates_card $DEPLOYPATH/public/
+    # Deploy to first path (absensi)
+    - /bin/cp -R app $DEPLOYPATH1
+    - /bin/cp -R bootstrap $DEPLOYPATH1
+    - /bin/cp -R resources $DEPLOYPATH1
+    - /bin/cp -R routes $DEPLOYPATH1
+    - /bin/cp artisan $DEPLOYPATH1
+    - /bin/cp composer.json $DEPLOYPATH1
+    - /bin/cp composer.lock $DEPLOYPATH1
+    - /bin/cp package.json $DEPLOYPATH1
+    - /bin/cp vite.config.js $DEPLOYPATH1
+    
+    # Public Folder Handling for first path
+    - /bin/mkdir -p $DEPLOYPATH1/public
+    - /bin/cp -R public/build $DEPLOYPATH1/public/
+    - /bin/cp public/index.php $DEPLOYPATH1/public/
+    - /bin/cp public/.htaccess $DEPLOYPATH1/public/
+    - /bin/cp public/favicon.ico $DEPLOYPATH1/public/
+    - /bin/cp public/robots.txt $DEPLOYPATH1/public/
+    - /bin/cp -R public/assets $DEPLOYPATH1/public/
+    - /bin/cp -R public/fonts $DEPLOYPATH1/public/
+    - /bin/cp -R public/templates_card $DEPLOYPATH1/public/
+
+    # Deploy to second path (smkskesehatanambon.web.id)
+    - /bin/cp -R app $DEPLOYPATH2
+    - /bin/cp -R bootstrap $DEPLOYPATH2
+    - /bin/cp -R resources $DEPLOYPATH2
+    - /bin/cp -R routes $DEPLOYPATH2
+    - /bin/cp artisan $DEPLOYPATH2
+    - /bin/cp composer.json $DEPLOYPATH2
+    - /bin/cp composer.lock $DEPLOYPATH2
+    - /bin/cp package.json $DEPLOYPATH2
+    - /bin/cp vite.config.js $DEPLOYPATH2
+    
+    # Public Folder Handling for second path
+    - /bin/mkdir -p $DEPLOYPATH2/public
+    - /bin/cp -R public/build $DEPLOYPATH2/public/
+    - /bin/cp public/index.php $DEPLOYPATH2/public/
+    - /bin/cp public/.htaccess $DEPLOYPATH2/public/
+    - /bin/cp public/favicon.ico $DEPLOYPATH2/public/
+    - /bin/cp public/robots.txt $DEPLOYPATH2/public/
+    - /bin/cp -R public/assets $DEPLOYPATH2/public/
+    - /bin/cp -R public/fonts $DEPLOYPATH2/public/
+    - /bin/cp -R public/templates_card $DEPLOYPATH2/public/
