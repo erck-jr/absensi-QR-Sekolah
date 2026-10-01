@@ -11,4 +11,5 @@ class CardTemplate extends Model
     protected $casts = [
         'cached_idcard' => 'array',
     ];
+    
 }
