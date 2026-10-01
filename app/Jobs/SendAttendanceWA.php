@@ -38,9 +38,10 @@ class SendAttendanceWA implements ShouldQueue
      */
     public function handle(): void
     {
-        // 1. Check Gateway First (Avoid unnecessary sleep if inactive)
+        // 1. Check Gateway First
         $gateway = WaGateway::where('is_active', true)->first();
         if (!$gateway) {
+            \Illuminate\Support\Facades\Log::warning("Pesan WA tidak terkirim: Tidak ada Gateway WA yang aktif.");
             return;
         }
 
@@ -63,8 +64,17 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        // 4. Randomized Delay (2-5 seconds limit) to handle 1200+ scale safely while avoiding WA Ban patterns
-        sleep(rand(2, 5));
+        // 4. Smart Delay to prevent Queue Worker blocking (anti WA Ban patterns)
+        $lastSentTime = \Illuminate\Support\Facades\Cache::get('wa_last_sent_time', 0);
+        $delayNeeded = rand(2, 5);
+        $nowTime = microtime(true);
+        
+        if (($nowTime - $lastSentTime) < $delayNeeded) {
+            $this->release(ceil($delayNeeded - ($nowTime - $lastSentTime)));
+            return;
+        }
+        
+        \Illuminate\Support\Facades\Cache::put('wa_last_sent_time', microtime(true), 10);
 
         // 5. Get Message Template Key
         $templateKey = $this->getTemplateKey();
@@ -78,9 +88,9 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        // Validate phone format (starts with 0 or +6)
-        if (!preg_match('/^(0|\+6)/', $recipient)) {
-            $this->logToDb('failed', 'Format nomor HP tidak valid (harus diawali 0 atau +6): ' . $recipient, $gateway->id, $recipient);
+        // Validate phone format (starts with 0, 62, or +62)
+        if (!preg_match('/^(0|62|\+62)/', $recipient)) {
+            $this->logToDb('failed', 'Format nomor HP tidak valid: ' . $recipient, $gateway->id, $recipient);
             return;
         }
 
@@ -140,10 +150,11 @@ class SendAttendanceWA implements ShouldQueue
                 ]
             ]);
 
+            // Increment count regardless of API success to prevent infinite spam loop on failure
+            \Illuminate\Support\Facades\Cache::increment($countKey);
+
             if ($response->successful()) {
                 $this->logToDb('sent', 'Sent successfully via OneSender', $gateway->id, $recipient, $messageContent);
-                // Increment count
-                \Illuminate\Support\Facades\Cache::increment($countKey);
             } else {
                 $this->logToDb('failed', 'API Error: ' . $response->body(), $gateway->id, $recipient, $messageContent);
             }

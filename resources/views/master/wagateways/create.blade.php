@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Tambah WA Gateway</x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -13,11 +13,11 @@
                     @csrf
                     <div class="mb-6">
                         <label for="name" class="block mb-2 text-sm font-medium text-gray-900">Nama Gateway</label>
-                        <input type="text" id="name" name="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" required placeholder="Contoh: Fonnte">
+                        <input type="text" id="name" name="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" required placeholder="Contoh: OneSender">
                     </div>
                     <div class="mb-6">
                         <label for="api_url" class="block mb-2 text-sm font-medium text-gray-900">API URL</label>
-                        <input type="url" id="api_url" name="api_url" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" required placeholder="https://api.fonnte.com">
+                        <input type="url" id="api_url" name="api_url" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" required placeholder="https://onesender.my.id/api/send">
                     </div>
                     <div class="mb-6">
                         <label for="api_token" class="block mb-2 text-sm font-medium text-gray-900">API Token</label>
