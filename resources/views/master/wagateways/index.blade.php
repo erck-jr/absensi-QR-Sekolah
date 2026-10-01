@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Notifikasi WA</x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -110,6 +110,22 @@
                         </x-primary-button>
                     </div>
                 </form>
+            </x-material-card>
+            <!-- Section 3: Antrian Notifikasi -->
+            <x-material-card title="Antrian Notifikasi (Queue Worker)" icon="sync" color="orange">
+                <div class="p-4 bg-orange-50 rounded-xl border border-orange-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h4 class="font-bold text-lg text-orange-800 mb-1">Proses Antrian Manual</h4>
+                        <p class="text-sm text-gray-700">Gunakan tombol ini jika cronjob bermasalah. Ini akan menjalankan perintah <code class="bg-gray-100 px-1 py-0.5 rounded text-xs text-pink-600">php artisan queue:work --stop-when-empty</code> untuk memproses notifikasi WA yang tertunda.</p>
+                    </div>
+                    
+                    <form action="{{ route('wagateways.process_queue') }}" method="POST" class="shrink-0">
+                        @csrf
+                        <button type="submit" class="text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center shadow transition-colors" onclick="this.innerHTML='<span class=\'material-icons animate-spin mr-2 text-sm\'>refresh</span> Memproses...'; this.classList.add('opacity-75', 'cursor-not-allowed');">
+                            <span class="material-icons text-sm mr-2">play_arrow</span> Jalankan Worker
+                        </button>
+                    </form>
+                </div>
             </x-material-card>
         </div>
     </div>

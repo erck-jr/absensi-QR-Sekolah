@@ -89,4 +89,19 @@ class WaGatewayController extends Controller
 
         return redirect()->route('wagateways.index')->with('success', 'Pengaturan Notifikasi WA berhasil disimpan');
     }
+
+    public function processQueue()
+    {
+        // Only admin can process queue
+        if (auth()->user()->role !== 'admin') {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses untuk memproses antrian.');
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('queue:work', ['--stop-when-empty' => true]);
+            return redirect()->back()->with('success', 'Antrian notifikasi berhasil diproses (Queue worker dijalankan).');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memproses antrian: ' . $e->getMessage());
+        }
+    }
 }
