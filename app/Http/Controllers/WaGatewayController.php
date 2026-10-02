@@ -104,4 +104,22 @@ class WaGatewayController extends Controller
             return redirect()->back()->with('error', 'Gagal memproses antrian: ' . $e->getMessage());
         }
     }
+
+    public function cronProcessQueue(Request $request)
+    {
+        // Simple token for security from external cron service
+        $token = $request->query('token');
+        $expectedToken = 'cron12345'; // Token sederhana untuk keamanan
+
+        if ($token !== $expectedToken) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized access'], 401);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('queue:work', ['--stop-when-empty' => true]);
+            return response()->json(['status' => 'success', 'message' => 'Queue worker executed successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
 }

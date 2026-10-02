@@ -23,6 +23,9 @@ Route::get('/', function () {
 Route::get('/cek-kehadiran', [\App\Http\Controllers\PublicAttendanceController::class, 'index'])->name('public.attendance.index');
 Route::post('/cek-kehadiran', [\App\Http\Controllers\PublicAttendanceController::class, 'check'])->name('public.attendance.check');
 
+// External Cron Route
+Route::get('/cron/process-queue', [\App\Http\Controllers\WaGatewayController::class, 'cronProcessQueue']);
+
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
     // Public/Operator Routes
