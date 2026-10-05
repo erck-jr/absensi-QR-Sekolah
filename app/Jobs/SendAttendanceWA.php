@@ -7,11 +7,23 @@ use App\Models\WaGateway;
 use App\Models\WaLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class SendAttendanceWA implements ShouldQueue
 {
     use Queueable;
+
+    /**
+     * Jumlah batas percobaan job sebelum dinyatakan gagal total.
+     */
+    public int $tries = 100;
+
+    /**
+     * Waktu tunggu (detik) jika terjadi exception yang tidak tertangkap.
+     */
+    public int $backoff = 10;
 
     public $attendance;
     public string $type; // 'student' or 'teacher'
@@ -34,6 +46,14 @@ class SendAttendanceWA implements ShouldQueue
     }
 
     /**
+     * Dapatkan middleware yang harus dilalui oleh job.
+     */
+    public function middleware(): array
+    {
+        return [new RateLimited('wa-gateway-limiter')];
+    }
+
+    /**
      * Execute the job.
      */
     public function handle(): void
@@ -41,11 +61,11 @@ class SendAttendanceWA implements ShouldQueue
         // 1. Check Gateway First
         $gateway = WaGateway::where('is_active', true)->first();
         if (!$gateway) {
-            \Illuminate\Support\Facades\Log::warning("Pesan WA tidak terkirim: Tidak ada Gateway WA yang aktif.");
+            Log::warning("Pesan WA tidak terkirim: Tidak ada Gateway WA yang aktif.");
             return;
         }
 
-        // 2. Fetch User & Recipient Early (To ensure logs have valid data)
+        // 2. Fetch User & Recipient Early
         $user = ($this->type === 'student') ? $this->attendance->student : $this->attendance->teacher;
 
         if (!$user) {
@@ -56,7 +76,6 @@ class SendAttendanceWA implements ShouldQueue
         $recipient = $user->phone;
 
         // 3. Check Expiration (> 90 minutes)
-        // Check-in uses created_at, Check-out uses updated_at (when checkout time was recorded)
         $timestamp = ($this->messageType === 'check_in') ? $this->attendance->created_at : $this->attendance->updated_at;
         
         if (!$this->ignoreExpiration && $timestamp->diffInMinutes(now()) > 90) {
@@ -64,35 +83,24 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        // 4. Smart Delay to prevent Queue Worker blocking (anti WA Ban patterns)
-        $lastSentTime = \Illuminate\Support\Facades\Cache::get('wa_last_sent_time', 0);
-        $delayNeeded = rand(2, 5);
-        $nowTime = microtime(true);
-        
-        if (($nowTime - $lastSentTime) < $delayNeeded) {
-            $this->release(ceil($delayNeeded - ($nowTime - $lastSentTime)));
-            return;
-        }
-        
-        \Illuminate\Support\Facades\Cache::put('wa_last_sent_time', microtime(true), 10);
-
-        // 5. Get Message Template Key
-        $templateKey = $this->getTemplateKey();
-        
-        $template = MessageTemplate::where('key', $templateKey)->first();
-        // Fallback to default if specific not found (optional, or just use generic text)
-        $messageContent = $template ? $template->content : "Absensi {$this->messageType} berhasil.";
-
+        // 4. Validate Phone Number
         if (empty($recipient)) {
             $this->logToDb('failed', 'Recipient phone number is empty', $gateway->id);
             return;
         }
 
-        // Validate phone format (starts with 0, 62, or +62)
         if (!preg_match('/^(0|62|\+62)/', $recipient)) {
             $this->logToDb('failed', 'Format nomor HP tidak valid: ' . $recipient, $gateway->id, $recipient);
             return;
         }
+
+        // 5. Anti-Ban Jeda Acak Singkat (2 - 5 detik antar eksekusi)
+        sleep(rand(2, 5));
+
+        // 6. Get Message Template Key & Prepare Content
+        $templateKey = $this->getTemplateKey();
+        $template = MessageTemplate::where('key', $templateKey)->first();
+        $messageContent = $template ? $template->content : "Absensi {$this->messageType} berhasil.";
 
         $messageContent = str_replace(
             ['{name}', '{nis}', '{nuptk}', '{time}', '{date}', '{status}'],
@@ -110,35 +118,8 @@ class SendAttendanceWA implements ShouldQueue
         // Parse Spintax {A|B|C}
         $messageContent = self::parseSpintax($messageContent);
 
-        // 6. Send to OneSender
+        // 7. Send to OneSender
         try {
-            // Throttling Logic: 50 notifications -> 15 mins pause
-            $throttleLimit = 50;
-            $pauseMinutes = 15;
-            
-            $countKey = 'wa_total_sent_count';
-            $throttleKey = 'wa_throttle_until';
-
-            // Check if we are currently throttled
-            $throttleUntil = \Illuminate\Support\Facades\Cache::get($throttleKey);
-            if ($throttleUntil && now()->lt($throttleUntil)) {
-                $seconds = now()->diffInSeconds($throttleUntil);
-                $this->release($seconds + 5); // Release back to queue
-                return;
-            }
-
-            $currentCount = \Illuminate\Support\Facades\Cache::get($countKey, 0);
-
-            if ($currentCount >= $throttleLimit) {
-                // Set throttle time
-                $until = now()->addMinutes($pauseMinutes);
-                \Illuminate\Support\Facades\Cache::put($throttleKey, $until, $until);
-                \Illuminate\Support\Facades\Cache::forget($countKey); // Reset count for next batch
-
-                $this->release($pauseMinutes * 60 + 5);
-                return;
-            }
-
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $gateway->api_token,
             ])->post($gateway->api_url, [
@@ -149,9 +130,6 @@ class SendAttendanceWA implements ShouldQueue
                     'body' => $messageContent
                 ]
             ]);
-
-            // Increment count regardless of API success to prevent infinite spam loop on failure
-            \Illuminate\Support\Facades\Cache::increment($countKey);
 
             if ($response->successful()) {
                 $this->logToDb('sent', 'Sent successfully via OneSender', $gateway->id, $recipient, $messageContent);
@@ -170,7 +148,6 @@ class SendAttendanceWA implements ShouldQueue
             return $this->messageType == 'check_in' ? 'teacher_checkin' : 'teacher_checkout';
         }
 
-        // Student
         if ($this->messageType == 'check_in') {
             return $this->isLate ? 'student_late_checkin' : 'student_checkin';
         } else {
@@ -189,15 +166,12 @@ class SendAttendanceWA implements ShouldQueue
 
     private function logToDb($status, $details, $gatewayId = null, $recipient = null, $content = null)
     {
-        // If no gatewayId is provided, try to find the first active one
         if (!$gatewayId) {
             $gateway = WaGateway::where('is_active', true)->first();
             $gatewayId = $gateway ? $gateway->id : null;
         }
 
-        // Only log if we have a valid gateway or if the DB allows null (checked: schema says constrained, so gateway_id is likely required)
         if (!$gatewayId) {
-            // Fallback: try to find ANY gateway if no active one exists
             $gateway = WaGateway::first();
             $gatewayId = $gateway ? $gateway->id : null;
         }
@@ -213,16 +187,12 @@ class SendAttendanceWA implements ShouldQueue
                 'error_details' => $details,
             ]);
         } else {
-            // If absolutely no gateway exists, we can't log to wa_logs due to FK constraint
-            // We'll just let it fail silently or log to Laravel logs
-            \Illuminate\Support\Facades\Log::warning("Cannot log WA to DB: No Gateway found.");
+            Log::warning("Cannot log WA to DB: No Gateway found.");
         }
     }
 
     /**
      * Parse Spintax {Option1|Option2|Option3} recursively.
-     * @param string $text
-     * @return string
      */
     public static function parseSpintax($text)
     {

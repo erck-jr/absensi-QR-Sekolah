@@ -404,13 +404,15 @@
                 checkInContainer.classList.remove('hidden');
                 checkOutContainer.classList.remove('hidden');
                 checkInInput.required = true;
-                checkOutInput.required = true;
+                checkOutInput.required = false;
                 noteInput.required = false;
             } else {
                 checkInContainer.classList.add('hidden');
                 checkOutContainer.classList.add('hidden');
                 checkInInput.required = false;
                 checkOutInput.required = false;
+                checkInInput.value = '';
+                checkOutInput.value = '';
                 noteInput.required = true;
             }
         }
