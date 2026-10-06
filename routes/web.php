@@ -74,6 +74,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
         Route::resource('card-templates', CardTemplateController::class)->only(['index', 'update']);
         Route::post('wagateways/settings', [\App\Http\Controllers\WaGatewayController::class, 'updateSettings'])->name('wagateways.settings.update');
         Route::post('wagateways/process-queue', [\App\Http\Controllers\WaGatewayController::class, 'processQueue'])->name('wagateways.process_queue');
+        Route::post('wagateways/retry-queue', [\App\Http\Controllers\WaGatewayController::class, 'RetryQueue'])->name('wagateways.retry_queue');
         Route::resource('wagateways', \App\Http\Controllers\WaGatewayController::class);
         Route::get('walogs', [WaLogController::class, 'index'])->name('walogs.index');
         Route::get('walogs/export', [WaLogController::class, 'export'])->name('walogs.export');

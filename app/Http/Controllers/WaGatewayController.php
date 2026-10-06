@@ -105,6 +105,25 @@ class WaGatewayController extends Controller
         }
     }
 
+    public function RetryQueue()
+{
+    // Only admin can process queue
+    if (auth()->user()->role !== 'admin') {
+        return redirect()->back()->with('error', 'Anda tidak memiliki akses untuk memproses antrian.');
+    }
+
+    try {
+        // Panggil queue:retry dengan argumen 'all' dipisah
+        \Illuminate\Support\Facades\Artisan::call('queue:retry', [
+            'id' => ['all']
+        ]);
+
+        return redirect()->back()->with('success', 'Semua antrian gagal berhasil dimasukkan kembali ke queue.');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Gagal memproses antrian: ' . $e->getMessage());
+    }
+}
+
     public function cronProcessQueue(Request $request)
     {
         // Simple token for security from external cron service
