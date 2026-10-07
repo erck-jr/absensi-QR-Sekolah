@@ -69,10 +69,10 @@ class WaLogController extends Controller
     {
         $request->validate([
             'confirm_checkbox' => 'required',
-            'confirm_text' => 'required|string',
+            'clear_confirm_text' => 'required|string',
         ]);
 
-        if (trim($request->confirm_text) !== 'BERSIHKAN LOG') {
+        if (trim($request->clear_confirm_text) !== 'BERSIHKAN LOG') {
             return redirect()->route('walogs.index')->with('error', 'Konfirmasi teks tidak cocok. Pembersihan log dibatalkan.');
         }
 
