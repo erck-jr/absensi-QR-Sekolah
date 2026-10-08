@@ -16,12 +16,12 @@ class SendAttendanceWA implements ShouldQueue
     use Queueable;
 
     /**
-     * Jumlah batas percobaan job sebelum dinyatakan gagal total.
+     * Batas maksimal pengulangan job oleh Laravel.
      */
-    public int $tries = 100;
+    public int $tries = 10;
 
     /**
-     * Waktu tunggu (detik) jika terjadi exception yang tidak tertangkap.
+     * Waktu tunggu (detik) sebelum job dicoba ulang jika melempar exception.
      */
     public int $backoff = 10;
 
@@ -32,9 +32,6 @@ class SendAttendanceWA implements ShouldQueue
     public bool $isEarly;
     public bool $ignoreExpiration;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct($attendance, string $type, string $messageType = 'check_in', bool $isLate = false, bool $isEarly = false, bool $ignoreExpiration = false)
     {
         $this->attendance = $attendance;
@@ -45,59 +42,77 @@ class SendAttendanceWA implements ShouldQueue
         $this->ignoreExpiration = $ignoreExpiration;
     }
 
-    /**
-     * Dapatkan middleware yang harus dilalui oleh job.
-     */
     public function middleware(): array
     {
         return [new RateLimited('wa-gateway-limiter')];
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
-        // 1. Check Gateway First
+        // Ambil waktu pertama kali Job dimasukkan ke antrian (dikirim via dispatch)
+        $jobCreatedAt = $this->job ? \Carbon\Carbon::createFromTimestamp($this->job->getTimestamp()) : now();
+
+        // ---------------------------------------------------------------------
+        // 1. PENGECEKAN BATAS MAKSIMAL RETRY (> 10 kali)
+        // ---------------------------------------------------------------------
+        if ($this->attempts() > 10) {
+            $reason = 'Percobaan Ulang Pengiriman WA sudah melewati batas maksimal 10x Percobaan';
+            $this->logToDb('failed', $reason);
+            $this->fail(new \Exception($reason)); // Lempar ke failed_jobs
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // 2. PENGECEKAN LAMA ANTRIAN DI QUEUE (>= 30 Menit)
+        // ---------------------------------------------------------------------
+        if ($jobCreatedAt->diffInMinutes(now()) >= 30) {
+            $reason = 'Waktu Tunggu Job Pengiriman WA untuk dieksekusi sudah lebih dari 30 menit';
+            $this->logToDb('expired', $reason);
+            $this->fail(new \Exception($reason)); // Lempar ke failed_jobs untuk retry manual
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. PENGECEKAN KADALUARSA PESAN (>= 90 Menit)
+        // ---------------------------------------------------------------------
+        if (!$this->ignoreExpiration && $jobCreatedAt->diffInMinutes(now()) >= 90) {
+            $reason = 'Waktu Pesan sudah lebih dari 90 Menit, pesan absensi sudah kadaluarsa';
+            $this->logToDb('expired', $reason);
+            return; // Selesai normal tanpa lempar ke failed_jobs
+        }
+
+        // ---------------------------------------------------------------------
+        // 4. VALIDASI DATA GATEWAY & PENERIMA
+        // ---------------------------------------------------------------------
         $gateway = WaGateway::where('is_active', true)->first();
         if (!$gateway) {
-            Log::warning("Pesan WA tidak terkirim: Tidak ada Gateway WA yang aktif.");
-            return;
+            // Jika tidak ada gateway, lempar exception agar masuk mekanisme retry/failed
+            throw new \Exception('Tidak ada Gateway WA yang aktif.');
         }
 
-        // 2. Fetch User & Recipient Early
         $user = ($this->type === 'student') ? $this->attendance->student : $this->attendance->teacher;
-
         if (!$user) {
-            $this->logToDb('failed', 'User record not found for ' . $this->type . ' ID: ' . ($this->attendance->student_id ?? $this->attendance->teacher_id), $gateway->id);
+            $reason = 'User record not found for ' . $this->type . ' ID: ' . ($this->attendance->student_id ?? $this->attendance->teacher_id);
+            $this->logToDb('failed', $reason, $gateway->id);
+            $this->fail(new \Exception($reason));
             return;
         }
-        
+
         $recipient = $user->phone;
 
-        // 3. Check Expiration (> 90 minutes)
-        $timestamp = ($this->messageType === 'check_in') ? $this->attendance->created_at : $this->attendance->updated_at;
-        
-        if (!$this->ignoreExpiration && $timestamp->diffInMinutes(now()) > 90) {
-            $this->logToDb('expired', 'Message expired (older than 90 mins)', $gateway->id, $recipient);
+        if (empty($recipient) || !preg_match('/^(0|62|\+62)/', $recipient)) {
+            $reason = 'Format atau Nomor HP tidak valid: ' . ($recipient ?? 'kosong');
+            $this->logToDb('failed', $reason, $gateway->id, $recipient);
+            $this->fail(new \Exception($reason));
             return;
         }
 
-        // 4. Validate Phone Number
-        if (empty($recipient)) {
-            $this->logToDb('failed', 'Recipient phone number is empty', $gateway->id);
-            return;
-        }
+        // Anti-Ban Jeda Acak Singkat (2 - 4 detik)
+        sleep(rand(2, 4));
 
-        if (!preg_match('/^(0|62|\+62)/', $recipient)) {
-            $this->logToDb('failed', 'Format nomor HP tidak valid: ' . $recipient, $gateway->id, $recipient);
-            return;
-        }
-
-        // 5. Anti-Ban Jeda Acak Singkat (2 - 5 detik antar eksekusi)
-        sleep(rand(2, 5));
-
-        // 6. Get Message Template Key & Prepare Content
+        // ---------------------------------------------------------------------
+        // 5. PENYUSUNAN PESAN
+        // ---------------------------------------------------------------------
         $templateKey = $this->getTemplateKey();
         $template = MessageTemplate::where('key', $templateKey)->first();
         $messageContent = $template ? $template->content : "Absensi {$this->messageType} berhasil.";
@@ -108,19 +123,20 @@ class SendAttendanceWA implements ShouldQueue
                 $user->name,
                 $this->type == 'student' ? ($user->nis ?? '-') : '-',
                 $this->type == 'teacher' ? ($user->nuptk ?? '-') : '-',
-                \Carbon\Carbon::parse($this->messageType == 'check_in' ? $this->attendance->check_in : $this->attendance->check_out)->format('H:i:s'), 
+                \Carbon\Carbon::parse($this->messageType == 'check_in' ? $this->attendance->check_in : $this->attendance->check_out)->format('H:i:s'),
                 \Carbon\Carbon::parse($this->attendance->dates)->format('d-m-Y'),
                 $this->getStatusLabel()
             ],
             $messageContent
         );
 
-        // Parse Spintax {A|B|C}
         $messageContent = self::parseSpintax($messageContent);
 
-        // 7. Send to OneSender
+        // ---------------------------------------------------------------------
+        // 6. EKSEKUSI PENGIRIMAN KE API ONESENDER
+        // ---------------------------------------------------------------------
         try {
-            $response = Http::withHeaders([
+            $response = Http::timeout(10)->withHeaders([
                 'Authorization' => 'Bearer ' . $gateway->api_token,
             ])->post($gateway->api_url, [
                 'recipient_type' => 'individual',
@@ -132,13 +148,16 @@ class SendAttendanceWA implements ShouldQueue
             ]);
 
             if ($response->successful()) {
+                // Tulis Log SENT hanya jika pesan benar-benar sukses terkirim
                 $this->logToDb('sent', 'Sent successfully via OneSender', $gateway->id, $recipient, $messageContent);
             } else {
-                $this->logToDb('failed', 'API Error: ' . $response->body(), $gateway->id, $recipient, $messageContent);
+                // Jika API Error, lemparkan exception agar Laravel melakukan retry di queue tanpa catat log dulu
+                throw new \Exception('API Error: ' . $response->body());
             }
 
         } catch (\Exception $e) {
-            $this->logToDb('failed', 'Exception: ' . $e->getMessage(), $gateway->id, $recipient, $messageContent);
+            // Lemparkan exception agar dicoba ulang di antrian selama tries <= 10 dan waktu < 30 menit
+            throw $e;
         }
     }
 
@@ -191,9 +210,6 @@ class SendAttendanceWA implements ShouldQueue
         }
     }
 
-    /**
-     * Parse Spintax {Option1|Option2|Option3} recursively.
-     */
     public static function parseSpintax($text)
     {
         return preg_replace_callback(
