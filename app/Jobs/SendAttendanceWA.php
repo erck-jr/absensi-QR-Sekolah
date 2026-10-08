@@ -15,14 +15,7 @@ class SendAttendanceWA implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Batas maksimal pengulangan job oleh Laravel.
-     */
     public int $tries = 10;
-
-    /**
-     * Waktu tunggu (detik) sebelum job dicoba ulang jika melempar exception.
-     */
     public int $backoff = 10;
 
     public $attendance;
@@ -49,11 +42,20 @@ class SendAttendanceWA implements ShouldQueue
 
     public function handle(): void
     {
-        // Ambil waktu pertama kali Job dimasukkan ke antrian
+        // Ambil waktu pertama kali Job dibuat/dimasukkan ke antrian
         $jobCreatedAt = $this->job ? \Carbon\Carbon::createFromTimestamp($this->job->getTimestamp()) : now();
 
         // ---------------------------------------------------------------------
-        // 1. PENGECEKAN BATAS MAKSIMAL RETRY (> 10 kali)
+        // 1. BATAS MAKSIMAL 1 HARI / 24 JAM (Pesan Hari Kemarin Batal Otomatis)
+        // ---------------------------------------------------------------------
+        if ($jobCreatedAt->diffInHours(now()) >= 24) {
+            $reason = 'Pesan dibatalkan: Waktu job sudah lebih dari 1 hari (24 jam)';
+            $this->logToDb('expired', $reason);
+            return; // Selesai normal, tidak perlu dikirim ke failed_jobs lagi
+        }
+
+        // ---------------------------------------------------------------------
+        // 2. PENGECEKAN BATAS MAKSIMAL RETRY (> 10 kali)
         // ---------------------------------------------------------------------
         if ($this->attempts() > 10) {
             $reason = 'Percobaan Ulang Pengiriman WA sudah melewati batas maksimal 10x Percobaan';
@@ -63,7 +65,7 @@ class SendAttendanceWA implements ShouldQueue
         }
 
         // ---------------------------------------------------------------------
-        // 2. PENGECEKAN LAMA ANTRIAN DI QUEUE (>= 30 Menit)
+        // 3. PENGECEKAN LAMA ANTRIAN DI QUEUE (>= 30 Menit)
         // ---------------------------------------------------------------------
         if ($jobCreatedAt->diffInMinutes(now()) >= 30) {
             $reason = 'Waktu Tunggu Job Pengiriman WA untuk dieksekusi sudah lebih dari 30 menit';
@@ -73,7 +75,7 @@ class SendAttendanceWA implements ShouldQueue
         }
 
         // ---------------------------------------------------------------------
-        // 3. VALIDASI DATA GATEWAY & PENERIMA
+        // 4. VALIDASI DATA GATEWAY & PENERIMA
         // ---------------------------------------------------------------------
         $gateway = WaGateway::where('is_active', true)->first();
         if (!$gateway) {
@@ -101,7 +103,7 @@ class SendAttendanceWA implements ShouldQueue
         sleep(rand(2, 4));
 
         // ---------------------------------------------------------------------
-        // 4. PENYUSUNAN PESAN
+        // 5. PENYUSUNAN PESAN
         // ---------------------------------------------------------------------
         $templateKey = $this->getTemplateKey();
         $template = MessageTemplate::where('key', $templateKey)->first();
@@ -116,7 +118,7 @@ class SendAttendanceWA implements ShouldQueue
                 \Carbon\Carbon::parse($this->messageType == 'check_in' ? $this->attendance->check_in : $this->attendance->check_out)->format('H:i:s'),
                 \Carbon\Carbon::parse($this->attendance->dates)->format('d-m-Y'),
                 $this->getStatusLabel(),
-                now()->format('H:i') // Mengisi placeholder {sent_time} dengan waktu eksekusi
+                now()->format('H:i')
             ],
             $messageContent
         );
@@ -124,7 +126,7 @@ class SendAttendanceWA implements ShouldQueue
         $messageContent = self::parseSpintax($messageContent);
 
         // ---------------------------------------------------------------------
-        // 5. EKSEKUSI PENGIRIMAN KE API ONESENDER
+        // 6. EKSEKUSI PENGIRIMAN KE API ONESENDER
         // ---------------------------------------------------------------------
         try {
             $response = Http::timeout(10)->withHeaders([
@@ -139,15 +141,12 @@ class SendAttendanceWA implements ShouldQueue
             ]);
 
             if ($response->successful()) {
-                // Tulis Log SENT hanya jika pesan berhasil terkirim
                 $this->logToDb('sent', 'Sent successfully via OneSender', $gateway->id, $recipient, $messageContent);
             } else {
-                // Jika API Error, throw exception agar di-retry otomatis tanpa catat log dulu
                 throw new \Exception('API Error: ' . $response->body());
             }
 
         } catch (\Exception $e) {
-            // Lemparkan exception agar dicoba ulang di antrian selama tries <= 10 dan waktu < 30 menit
             throw $e;
         }
     }

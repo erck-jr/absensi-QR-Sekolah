@@ -125,9 +125,9 @@
                             <span class="material-icons text-sm mr-2">play_arrow</span> Jalankan Worker
                         </button>
                     </form>
-                     <form action="{{ route('wagateways.retry_queue') }}" method="POST" class="shrink-0">
+                    <form action="{{ route('wagateways.retry_queue') }}" method="POST" class="shrink-0">
                         @csrf
-                        <button type="submit" class="text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center shadow transition-colors" onclick="this.innerHTML='<span class=\'material-icons animate-spin mr-2 text-sm\'>refresh</span> Memproses...'; this.classList.add('opacity-75', 'cursor-not-allowed');">
+                        <button type="submit" class="text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center shadow transition-colors" onclick="this.innerHTML='<span class=\'material-icons animate-spin mr-2 text-sm\'>refresh</span> Memproses...'; this.classList.add('opacity-75', 'cursor-not-allowed');">
                             <span class="material-icons text-sm mr-2">play_arrow</span> Ulangi Pengiriman Gagal
                         </button>
                     </form>
