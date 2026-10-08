@@ -43,7 +43,7 @@ class SendAttendanceWA implements ShouldQueue
     public function handle(): void
     {
         // Ambil waktu pertama kali Job dibuat/dimasukkan ke antrian
-        $jobCreatedAt = $this->job ? \Carbon\Carbon::createFromTimestamp($this->job->getTimestamp()) : now();
+        $jobCreatedAt = $this->job ? \Carbon\Carbon::createFromTimestamp($this->job->payload()['pushedAt'] ?? now()->timestamp) : now();
 
         // ---------------------------------------------------------------------
         // 1. BATAS MAKSIMAL 1 HARI / 24 JAM (Pesan Hari Kemarin Batal Otomatis)
