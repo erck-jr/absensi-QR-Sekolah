@@ -49,7 +49,7 @@ class SendAttendanceWA implements ShouldQueue
 
     public function handle(): void
     {
-        // Ambil waktu pertama kali Job dimasukkan ke antrian (dikirim via dispatch)
+        // Ambil waktu pertama kali Job dimasukkan ke antrian
         $jobCreatedAt = $this->job ? \Carbon\Carbon::createFromTimestamp($this->job->getTimestamp()) : now();
 
         // ---------------------------------------------------------------------
@@ -68,25 +68,15 @@ class SendAttendanceWA implements ShouldQueue
         if ($jobCreatedAt->diffInMinutes(now()) >= 30) {
             $reason = 'Waktu Tunggu Job Pengiriman WA untuk dieksekusi sudah lebih dari 30 menit';
             $this->logToDb('expired', $reason);
-            $this->fail(new \Exception($reason)); // Lempar ke failed_jobs untuk retry manual
+            $this->fail(new \Exception($reason)); // Lempar ke failed_jobs untuk retry manual oleh admin
             return;
         }
 
         // ---------------------------------------------------------------------
-        // 3. PENGECEKAN KADALUARSA PESAN (>= 90 Menit)
-        // ---------------------------------------------------------------------
-        if (!$this->ignoreExpiration && $jobCreatedAt->diffInMinutes(now()) >= 90) {
-            $reason = 'Waktu Pesan sudah lebih dari 90 Menit, pesan absensi sudah kadaluarsa';
-            $this->logToDb('expired', $reason);
-            return; // Selesai normal tanpa lempar ke failed_jobs
-        }
-
-        // ---------------------------------------------------------------------
-        // 4. VALIDASI DATA GATEWAY & PENERIMA
+        // 3. VALIDASI DATA GATEWAY & PENERIMA
         // ---------------------------------------------------------------------
         $gateway = WaGateway::where('is_active', true)->first();
         if (!$gateway) {
-            // Jika tidak ada gateway, lempar exception agar masuk mekanisme retry/failed
             throw new \Exception('Tidak ada Gateway WA yang aktif.');
         }
 
@@ -111,21 +101,22 @@ class SendAttendanceWA implements ShouldQueue
         sleep(rand(2, 4));
 
         // ---------------------------------------------------------------------
-        // 5. PENYUSUNAN PESAN
+        // 4. PENYUSUNAN PESAN
         // ---------------------------------------------------------------------
         $templateKey = $this->getTemplateKey();
         $template = MessageTemplate::where('key', $templateKey)->first();
         $messageContent = $template ? $template->content : "Absensi {$this->messageType} berhasil.";
 
         $messageContent = str_replace(
-            ['{name}', '{nis}', '{nuptk}', '{time}', '{date}', '{status}'],
+            ['{name}', '{nis}', '{nuptk}', '{time}', '{date}', '{status}', '{sent_time}'],
             [
                 $user->name,
                 $this->type == 'student' ? ($user->nis ?? '-') : '-',
                 $this->type == 'teacher' ? ($user->nuptk ?? '-') : '-',
                 \Carbon\Carbon::parse($this->messageType == 'check_in' ? $this->attendance->check_in : $this->attendance->check_out)->format('H:i:s'),
                 \Carbon\Carbon::parse($this->attendance->dates)->format('d-m-Y'),
-                $this->getStatusLabel()
+                $this->getStatusLabel(),
+                now()->format('H:i') // Mengisi placeholder {sent_time} dengan waktu eksekusi
             ],
             $messageContent
         );
@@ -133,7 +124,7 @@ class SendAttendanceWA implements ShouldQueue
         $messageContent = self::parseSpintax($messageContent);
 
         // ---------------------------------------------------------------------
-        // 6. EKSEKUSI PENGIRIMAN KE API ONESENDER
+        // 5. EKSEKUSI PENGIRIMAN KE API ONESENDER
         // ---------------------------------------------------------------------
         try {
             $response = Http::timeout(10)->withHeaders([
@@ -148,10 +139,10 @@ class SendAttendanceWA implements ShouldQueue
             ]);
 
             if ($response->successful()) {
-                // Tulis Log SENT hanya jika pesan benar-benar sukses terkirim
+                // Tulis Log SENT hanya jika pesan berhasil terkirim
                 $this->logToDb('sent', 'Sent successfully via OneSender', $gateway->id, $recipient, $messageContent);
             } else {
-                // Jika API Error, lemparkan exception agar Laravel melakukan retry di queue tanpa catat log dulu
+                // Jika API Error, throw exception agar di-retry otomatis tanpa catat log dulu
                 throw new \Exception('API Error: ' . $response->body());
             }
 
