@@ -23,8 +23,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Mendefinisikan Rate Limiter untuk WhatsApp Gateway
         RateLimiter::for('wa-gateway-limiter', function ($job) {
-            // Mengizinkan 50 eksekusi setiap 15 menit
-            return Limit::perMinutes(15, 50)->by('wa-send');
+            // Mengizinkan 35 eksekusi per menit (~525 pesan per 15 menit)
+            // Memastikan pengiriman lancar untuk 500-750 siswa pada peak hour
+            return Limit::perMinutes(1, 35)->by('wa-send');
         });
     }
 }

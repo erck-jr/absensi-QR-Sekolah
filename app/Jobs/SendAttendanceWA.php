@@ -15,8 +15,8 @@ class SendAttendanceWA implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 10;
-    public int $backoff = 10;
+    public int $tries = 3;
+    public int $backoff = 5;
 
     public $attendance;
     public string $type; // 'student' or 'teacher'
@@ -45,33 +45,45 @@ class SendAttendanceWA implements ShouldQueue
         // Ambil waktu pertama kali Job dibuat/dimasukkan ke antrian
         $jobCreatedAt = $this->job ? \Carbon\Carbon::createFromTimestamp($this->job->payload()['pushedAt'] ?? now()->timestamp) : now();
 
+        // Dapatkan waktu riil saat siswa/guru melakukan absensi
+        $attendanceTime = null;
+        if ($this->attendance && !empty($this->attendance->dates)) {
+            $timeString = $this->messageType === 'check_in' ? $this->attendance->check_in : $this->attendance->check_out;
+            if (!empty($timeString)) {
+                $attendanceDate = is_string($this->attendance->dates) 
+                    ? $this->attendance->dates 
+                    : $this->attendance->dates->format('Y-m-d');
+                $attendanceTime = \Carbon\Carbon::parse($attendanceDate . ' ' . $timeString);
+            }
+        }
+        $referenceTime = $attendanceTime ?? $jobCreatedAt;
+
         // ---------------------------------------------------------------------
         // 1. BATAS MAKSIMAL 1 HARI / 24 JAM (Pesan Hari Kemarin Batal Otomatis)
         // ---------------------------------------------------------------------
-        if ($jobCreatedAt->diffInHours(now()) >= 24) {
-            $reason = 'Pesan dibatalkan: Waktu job sudah lebih dari 1 hari (24 jam)';
+        if ($referenceTime->diffInHours(now()) >= 24) {
+            $reason = 'Pesan dibatalkan: Waktu absensi sudah lebih dari 1 hari (24 jam)';
             $this->logToDb('expired', $reason);
             return; // Selesai normal, tidak perlu dikirim ke failed_jobs lagi
         }
 
         // ---------------------------------------------------------------------
-        // 2. PENGECEKAN BATAS MAKSIMAL RETRY (> 10 kali)
+        // 2. PENGECEKAN BATAS MAKSIMAL RETRY
         // ---------------------------------------------------------------------
-        if ($this->attempts() > 10) {
-            $reason = 'Percobaan Ulang Pengiriman WA sudah melewati batas maksimal 10x Percobaan';
+        if ($this->attempts() > $this->tries) {
+            $reason = "Percobaan Ulang Pengiriman WA sudah melewati batas maksimal {$this->tries}x Percobaan";
             $this->logToDb('failed', $reason);
             $this->fail(new \Exception($reason)); // Lempar ke failed_jobs
             return;
         }
 
         // ---------------------------------------------------------------------
-        // 3. PENGECEKAN LAMA ANTRIAN DI QUEUE (>= 30 Menit)
+        // 3. PENGECEKAN JEDA MAKSIMAL DARI WAKTU ABSENSI (MAKSIMAL 15 MENIT)
         // ---------------------------------------------------------------------
-        if ($jobCreatedAt->diffInMinutes(now()) >= 30) {
-            $reason = 'Waktu Tunggu Job Pengiriman WA untuk dieksekusi sudah lebih dari 30 menit';
+        if (!$this->ignoreExpiration && $referenceTime->diffInMinutes(now()) >= 15) {
+            $reason = 'Pesan dibatalkan: Waktu absensi sudah lebih dari 15 menit yang lalu (' . $referenceTime->format('H:i:s') . ')';
             $this->logToDb('expired', $reason);
-            $this->fail(new \Exception($reason)); // Lempar ke failed_jobs untuk retry manual oleh admin
-            return;
+            return; // Selesai normal tanpa lempar fail(), agar failed_jobs tidak kotor
         }
 
         // ---------------------------------------------------------------------
@@ -90,17 +102,19 @@ class SendAttendanceWA implements ShouldQueue
             return;
         }
 
-        $recipient = $user->phone;
+        // Sanitasi nomor telepon: hapus karakter non-angka
+        $rawPhone = $user->phone ?? '';
+        $recipient = preg_replace('/[^0-9]/', '', $rawPhone);
 
         if (empty($recipient) || !preg_match('/^(0|62|\+62)/', $recipient)) {
-            $reason = 'Format atau Nomor HP tidak valid: ' . ($recipient ?? 'kosong');
-            $this->logToDb('failed', $reason, $gateway->id, $recipient);
+            $reason = 'Format atau Nomor HP tidak valid: ' . ($rawPhone ?: 'kosong');
+            $this->logToDb('failed', $reason, $gateway->id, $rawPhone);
             $this->fail(new \Exception($reason));
             return;
         }
 
-        // Anti-Ban Jeda Acak Singkat (2 - 4 detik)
-        sleep(rand(2, 4));
+        // Jeda acak alami (1.5 - 2.5 detik) untuk keamanan anti-ban & kelancaran antrian
+        usleep(random_int(1500000, 2500000));
 
         // ---------------------------------------------------------------------
         // 5. PENYUSUNAN PESAN

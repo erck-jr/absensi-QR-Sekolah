@@ -134,11 +134,29 @@ class WaGatewayController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthorized access'], 401);
         }
 
+        // Mencegah penumpukan proses worker di shared hosting (anti-overlap lock)
+        $lock = Cache::lock('cron_queue_worker_lock', 50);
+
+        if (!$lock->get()) {
+            return response()->json([
+                'status' => 'skipped',
+                'message' => 'Worker antrian sedang berjalan pada proses lain.'
+            ], 200);
+        }
+
         try {
-            \Illuminate\Support\Facades\Artisan::call('queue:work', ['--stop-when-empty' => true]);
+            @set_time_limit(60);
+            \Illuminate\Support\Facades\Artisan::call('queue:work', [
+                '--stop-when-empty' => true,
+                '--max-time' => 45,
+                '--sleep' => 1,
+                '--tries' => 3,
+            ]);
             return response()->json(['status' => 'success', 'message' => 'Queue worker executed successfully']);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        } finally {
+            $lock->release();
         }
     }
 }
