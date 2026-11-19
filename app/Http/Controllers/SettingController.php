@@ -27,9 +27,18 @@ class SettingController extends Controller
             'school_name' => 'nullable|string|max:255',
             'app_description' => 'nullable|string|max:500',
             'welcome_text' => 'nullable|string|max:1000',
+            'weekend_days' => 'nullable|array',
+            'weekend_days.*' => 'in:friday,saturday',
         ]);
 
-        $data = $request->except('_token', '_method', 'app_logo');
+        $data = $request->except('_token', '_method', 'app_logo', 'weekend_days');
+
+        // Handle weekend_days setting explicitly
+        $weekendDays = $request->input('weekend_days', []);
+        Setting::updateOrCreate(
+            ['key' => 'weekend_days'],
+            ['value' => json_encode(array_values($weekendDays))]
+        );
 
         if ($request->hasFile('app_logo')) {
             $file = $request->file('app_logo');

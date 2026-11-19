@@ -66,6 +66,10 @@ class PublicAttendanceController extends Controller
             // Logic jika tidak ada data di tabel attendance
             if ($date->gt($today)) {
                 $result['status'] = 'Belum Tersedia';
+            } elseif (is_weekend_day($date)) {
+                $result['status'] = 'Libur Akhir Pekan';
+            } elseif ($holiday = \App\Models\Holiday::whereDate('dates', $date)->first()) {
+                $result['status'] = 'Libur (' . $holiday->info . ')';
             } elseif ($date->eq($today)) {
                 $result['status'] = 'Belum Absensi';
             } else {

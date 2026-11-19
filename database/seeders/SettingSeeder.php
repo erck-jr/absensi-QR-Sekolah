@@ -15,6 +15,7 @@ class SettingSeeder extends Seeder
             'welcome_text' => 'Selamat Datang di Sistem Absensi Sekolah. Silakan scan kartu Anda pada scanner yang tersedia atau login untuk mengelola data.',
             'wa_api_url' => 'http://localhost:8000/send-message',
             'wa_api_key' => 'default_key',
+            'weekend_days' => '[]',
         ];
 
         foreach ($settings as $key => $value) {

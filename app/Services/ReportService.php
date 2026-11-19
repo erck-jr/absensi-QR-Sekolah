@@ -35,9 +35,14 @@ class ReportService
             $date = Carbon::createFromDate($year, $month, $d);
             $dateStr = $date->format('Y-m-d');
             
+            $isWeekend = is_weekend_day($date);
+            $weekendLabel = $isWeekend ? get_weekend_day_label($date) : null;
+
             $dates[$dateStr] = [
                 'day' => $d,
                 'is_sunday' => $date->isSunday(),
+                'is_weekend' => $isWeekend,
+                'weekend_label' => $weekendLabel,
                 'is_holiday' => $holidays->has($dateStr),
                 'holiday_info' => $holidays->get($dateStr),
             ];
@@ -62,7 +67,7 @@ class ReportService
                     // Handled by View (Merged Row) or just skip
                     // We just set a flag or empty, view determines if it renders
                     $cell['code'] = 'LIBUR'; 
-                } elseif ($meta['is_sunday']) {
+                } elseif ($meta['is_weekend']) {
                      $cell['code'] = '-';
                      $cell['class'] = 'text-gray-400';
                 } else {

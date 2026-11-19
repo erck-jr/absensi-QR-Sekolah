@@ -159,7 +159,7 @@
                             </tr>
                             <tr>
                                 @foreach($reportData['dates'] as $dateStr => $meta)
-                                    <th scope="col" class="px-1 py-3 border w-8 text-center">{{ $meta['day'] }}</th>
+                                    <th scope="col" class="px-1 py-3 border w-8 text-center {{ ($meta['is_weekend'] ?? $meta['is_sunday']) ? 'bg-gray-100 text-gray-400 font-bold' : '' }}">{{ $meta['day'] }}</th>
                                 @endforeach
                                 <th scope="col" class="px-2 py-3 border bg-green-100 text-green-800 text-center">H</th>
                                 <th scope="col" class="px-2 py-3 border bg-yellow-100 text-yellow-800 text-center">I</th>
@@ -234,11 +234,11 @@
                                                             </div>
                                                         </td>
                                                     @endif
-                                                @elseif($meta['is_sunday'])
+                                                @elseif($meta['is_weekend'] ?? $meta['is_sunday'])
                                                     @if($loop->parent->first)
                                                         <td rowspan="{{ $reportData['attendee_count'] }}" class="px-1 py-1 border text-center text-xs bg-gray-100 text-gray-500 font-bold" style="vertical-align: middle;">
                                                             <div style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; margin: 0 auto; min-height: 100px;">
-                                                                MINGGU
+                                                                {{ $meta['weekend_label'] ?? 'LIBUR' }}
                                                             </div>
                                                         </td>
                                                     @endif

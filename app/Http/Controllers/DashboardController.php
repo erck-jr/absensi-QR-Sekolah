@@ -20,19 +20,21 @@ class DashboardController extends Controller
         $totalUsers = \App\Models\User::count();
 
         // 2. Daily Attendance (Students)
+        $isTodayOff = is_weekend_day($today) || \App\Models\Holiday::whereDate('dates', $today)->exists();
+
         $studentAttendance = AttendanceStudent::whereDate('dates', $today)->with('attendanceCode')->get();
         $studentHadir = $studentAttendance->where('attendanceCode.name', 'Hadir')->count();
         $studentSakit = $studentAttendance->where('attendanceCode.name', 'Sakit')->count();
         $studentIzin = $studentAttendance->where('attendanceCode.name', 'Izin')->count();
-        // Alpa is total students minus those with a record (assuming records strictly mean presence/excuse)
-        $studentAlpa = $totalStudents - ($studentHadir + $studentSakit + $studentIzin);
+        // Alpa is 0 if today is weekend or holiday, otherwise total students minus present/excused
+        $studentAlpa = $isTodayOff ? 0 : max(0, $totalStudents - ($studentHadir + $studentSakit + $studentIzin));
 
         // 3. Daily Attendance (Teachers)
         $teacherAttendance = \App\Models\AttendanceTeacher::whereDate('dates', $today)->with('attendanceCode')->get();
         $teacherHadir = $teacherAttendance->where('attendanceCode.name', 'Hadir')->count();
         $teacherSakit = $teacherAttendance->where('attendanceCode.name', 'Sakit')->count();
         $teacherIzin = $teacherAttendance->where('attendanceCode.name', 'Izin')->count();
-        $teacherAlpa = $totalTeachers - ($teacherHadir + $teacherSakit + $teacherIzin);
+        $teacherAlpa = $isTodayOff ? 0 : max(0, $totalTeachers - ($teacherHadir + $teacherSakit + $teacherIzin));
 
         // 4. 7-Day Trend (Students) - Count 'H' only
         $studentTrend = [];

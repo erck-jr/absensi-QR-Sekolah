@@ -66,11 +66,13 @@ class ReportController extends Controller
         $date = $request->get('start_date', Carbon::today()->toDateString());
         
         $carbonDate = Carbon::parse($date);
+        $isWeekend = is_weekend_day($carbonDate);
         $isSunday = $carbonDate->isSunday();
         $holiday = Holiday::whereDate('dates', $date)->first();
 
-        if ($isSunday) {
-            return redirect()->route('reports.students', ['mode' => 'daily'])->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        if ($isWeekend) {
+            $dayName = $carbonDate->translatedFormat('l');
+            return redirect()->route('reports.students', ['mode' => 'daily'])->with('error', "Laporan tidak tersedia untuk hari {$dayName} (Hari Libur Akhir Pekan).");
         }
 
         if ($holiday) {
@@ -141,11 +143,13 @@ class ReportController extends Controller
         $date = $request->get('start_date', Carbon::today()->toDateString());
         
         $carbonDate = Carbon::parse($date);
+        $isWeekend = is_weekend_day($carbonDate);
         $isSunday = $carbonDate->isSunday();
         $holiday = Holiday::whereDate('dates', $date)->first();
 
-        if ($isSunday) {
-            return redirect()->route('reports.teachers', ['mode' => 'daily'])->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        if ($isWeekend) {
+            $dayName = $carbonDate->translatedFormat('l');
+            return redirect()->route('reports.teachers', ['mode' => 'daily'])->with('error', "Laporan tidak tersedia untuk hari {$dayName} (Hari Libur Akhir Pekan).");
         }
 
         if ($holiday) {
@@ -321,8 +325,9 @@ class ReportController extends Controller
         $date = $request->get('start_date', Carbon::today()->toDateString());
         
         $carbonDate = Carbon::parse($date);
-        if ($carbonDate->isSunday()) {
-            return back()->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        if (is_weekend_day($carbonDate)) {
+            $dayName = $carbonDate->translatedFormat('l');
+            return back()->with('error', "Laporan tidak tersedia untuk hari {$dayName} (Hari Libur Akhir Pekan).");
         }
 
         $holiday = Holiday::whereDate('dates', $date)->first();
@@ -364,8 +369,9 @@ class ReportController extends Controller
         $date = $request->get('start_date', Carbon::today()->toDateString());
 
         $carbonDate = Carbon::parse($date);
-        if ($carbonDate->isSunday()) {
-            return back()->with('error', 'Laporan tidak tersedia untuk hari Minggu.');
+        if (is_weekend_day($carbonDate)) {
+            $dayName = $carbonDate->translatedFormat('l');
+            return back()->with('error', "Laporan tidak tersedia untuk hari {$dayName} (Hari Libur Akhir Pekan).");
         }
 
         $holiday = Holiday::whereDate('dates', $date)->first();
